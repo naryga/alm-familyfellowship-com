@@ -1,0 +1,20 @@
+<?php
+
+function content_type_reference_install() {
+  
+  drupal_set_message('Installing content_type_reference');
+  
+  if( !module_exist( "content" ) ) {
+    drupal_set_message( t('content.module (cck) is not installed. content_type_reference installation can not proceed.'), 'error' );
+    return false;
+  }
+  
+  drupal_set_message( t('Rebuilding CCK type/field cache') );
+  // this will cause the CCK admin screens to correctly display the new field type
+  content_clear_type_cache();
+  _content_type_info( true );
+  
+  drupal_set_message( t('Module content_type_reference installed successfully.') );
+
+}
+

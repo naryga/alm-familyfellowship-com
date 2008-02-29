@@ -1,0 +1,196 @@
+quotes.module
+CHANGELOG.txt
+$Id: CHANGELOG.txt,v 1.11.2.1 2007/02/19 19:33:52 jhriggs Exp $
+
+2007-02-19
+  - release 5.x-1.1
+  - quotes.install: remove reference to quotes_version()
+
+2007-02-14
+  - release 5.x-1.0
+  - quotes.module
+    - updated for Drupal 5 (addresses task 106880 created by dgrant)
+    - added "Update every x minutes/hours/days/weeks" for blocks
+      handled by hook_cron() and in hook_block() for 'view' op
+      (addresses feature 65246 requested by Tim99)
+    - removed block title - use name instead
+    - moved all block configuration into the standard configuration
+      provided by block.module (i.e. use 'configure' and 'save' ops of
+      hook_block())
+  - quotes.info: new file
+  - quotes.install: remove title, add cron fields to quotes_blocks
+  - INSTALL.txt, README.txt: updated for Drupal 5 changes
+
+2006-07-06
+  - release 4.7r4/2006070600
+  - quotes.module: fix $user assignment in _quotes_feed_user() caused
+    by code-style change in 4.7r1 (fixes bug 72432 reported by nashif)
+
+2006-05-22
+  - release 4.7r3/2006052201
+  - quotes.module
+    - changed admin/settings/quotes to use hook_settings() (addresses
+      bug 64928 reported by sokrplare_10)
+    - made title optional (addresses feature 64581 requested by
+      bomarmonk)
+
+2006-05-22
+  - release 4.7r2/2006052200
+  - quotes.module
+    - moved admin menus from admin/quotes to admin/settings/quotes
+    - optimized several queries to improve performance (addresses bugs
+      64584 and 63062 reported by Taran and red_eye, respectively)
+  - quotes.install
+    - fixed PRIMARY KEY on quotes table
+    - added indexes on nid and promote in quotes table
+  - INSTALL.txt
+    - changed admin path
+    - added note to check update.php
+
+2006-05-09
+  - release 4.7r1/2006050900
+  - quotes.module
+    - updated for 4.7
+    - updated coding style to more-closely resemble Drupal's standards
+    - anonymous users can create/maintain quotes (addresses bug 19455
+      submitted by John Callaghan)
+    - added 'create quotes' and 'import quotes' permissions for
+      finer-grained control
+    - quotes now maintain node revisions
+  - quotes.install
+    - new install file
+    - performs database UTF-8 update
+    - adds vid column and changes primary key on quotes table for
+      revision-handling
+    - creates {quotes}_bid_seq sequence for pgsql (addresses bug 7640)
+  - INSTALL.txt
+    - updated permissions
+    - updated for quotes.install
+  - install.inc: removed; replaced by quotes.install
+
+2005-02-26
+  - release 4.6r1/2005022601
+  - quotes.module: updated for 4.6 (addresses bugs 13376, 13374,
+    and 16385 reported by TDobes and 17631 reported by Anonymous)
+
+2005-02-26
+  - release 4.5r4/2005022600
+  - install.inc
+    - initial install now clears menu cache and redirects to quotes
+      admin page (so menus display properly)
+    - added block type field to table definition
+  - quotes.module
+    - corrected feeds (addresses bug 161127 reported by crazybooks)
+    - corrected upgrade import of quotes with multiple lines
+      (addresses bug 13883 reported by mousse-man)
+    - theme_quotes_page() returns its output rather than printing it
+    - blocks can now be configured to display the most recent quote in
+      addition to a random quote (addresses feature 16983 requested by
+      sethcohn)
+  - README.txt, INSTALL.txt: updated with information about displaying
+    most recent quote in blocks
+
+2004-11-17
+  - release 4.5r3/2004111700
+  - install.inc: upgrade now deletes pre-4.5 random quotes block from
+    blocks table
+  - INSTALL.txt: added note about upgrading 1000 quotes at a time
+
+2004-11-12
+  - release 4.5r2/2004111200
+  - quotes.module
+    - upgrade import page now has help text describing what is
+      happening (addresses bug 12824 reported by TDobes)
+    - "Upgrade" button will properly redirect to
+      node/add/quotes/upgrade even if the tables have already been
+      created (addresses bug 12824 reported by TDobes)
+    - documented the %id variable available in quote title (addresses
+      bug 12824 reported by TDobes)
+    - role and user filter items on add block form now explain that no
+      roles/users are displayed because the 'edit own quotes'
+      permission has not been assigned (documents behavior described
+      in bug 12825 reported by TDobes)
+    - quotes-related links in quotes_link() are not displayed if the
+      module is not installed
+    - non-existent blocks are not displayed (affected upgrades)
+  - install.inc: "Upgrade" button will properly redirect to
+    node/add/quotes/upgrade even if the tables have already been
+    created (addresses bug 12824 reported by TDobes)
+
+2004-11-11
+  - release 4.5r1/2004111100 (versioning changed to better coincide
+    with Drupal versions)
+  - quotes.module
+    - updated for 4.5 (addresses task 8662 created by JonBob)
+    - quotes are now nodes (addresses feature 9205 requested by jbc
+      and most of the items in feature 5242 requested by joe lombardo)
+    - quotes have feeds
+    - author is no longer a required field (addresses feature 7925
+      requested by erikhopp)
+    - fortune files can now be imported (addresses feature 3748
+      requested by me on behalf of adrian)
+    - administrators can define any number of random quote blocks that
+      can be configured to restrict the quotes displayed based on node
+      IDs, roles, users, and/or categories/terms
+    - the display of individual quotes and pages of quotes is
+      themeable via theme_quotes_quote() and theme_quotes_page(),
+      respectively
+  - install.inc: new PHP file that handles table creation and
+    installation
+  - INSTALL.txt, README.txt: updated for node implementation and
+    multiple blocks
+  - TODO.txt: removed all three entries addressed by this release
+
+2004-03-10
+  - release 1.0.5/2004031000
+  - quotes.module
+    - updated for latest CVS changes (4.4)
+    - updated formatting, variable names
+
+2003-10-27
+  - release 1.0.4/2003102700
+  - quotes.module
+    - removed sub-forms for install/remove buttons in
+      _quotes_settings() as apparently some "lesser" browsers choke on
+      them (reported by GeorgeKao)
+    - added deletion of quotes_leader variable when removing module
+
+2003-10-09
+  - release 1.0.3/2003100900
+  - quotes.module
+    - updated for latest CVS changes (_help() changes, _system()
+      removal, $help removed from menu())
+    - added t() on menu items
+    - added help text for overview, add, and settings pages
+    - replaced preg_replace() with str_replace()
+    - added missing restore_error_handler() call in _quotes_import()
+    - fixed two remaining calls to _quotes_admin_overview() missed in
+      1.0.2/2003100200
+  - TODO: added import via file upload
+
+2003-10-02
+  - release 1.0.2/2003100200
+  - quotes.module
+    - updated for latest CVS changes (integrated admin, etc.);
+      should be 4.3.0-compatible
+    - renamed "private" module functions quotes_* to _quotes_*
+    - added quotes_page() hook that displays all quotes at
+      <http://site.name/quotes> (suggestion by Boris Mann)
+    - renamed quotes_admin_overview() to _quotes_overview() as it is
+      now used both in the admin and in quotes_page() (suggestion by
+      Boris Mann)
+    - paging is handled correctly in _quotes_overview()
+    - untabified
+  - README: updated for TODO
+  - TODO: new file
+
+2003-09-19
+  - release 1.0.1/2003091900
+  - quotes.module: fixed CSS class names used in the block, replacing
+    underscores with dashes (noticed by Boris Mann)
+  - README: added information about CSS classes
+  - README: added note about the cache
+  - INSTALL: added note about cache
+
+2003-09-18
+  - initial release 1.0/2003091800

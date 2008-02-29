@@ -1,0 +1,14 @@
+<?php
+// $Id: pay_check.install,v 0.01 2008/29/01 14:28:44 dries Exp $
+
+/**
+ * Implementation of hook_install().
+ */
+function pay_check_install() {
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function pay_check_uninstall() {
+}

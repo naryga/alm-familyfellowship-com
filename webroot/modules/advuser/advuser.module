@@ -1,0 +1,592 @@
+<?php
+// $Id: advuser.module,v 1.13.2.1 2008/01/10 14:17:49 sign Exp $
+
+define('ADVUSER_DEFAULT_NEW_MAIL', "User email: %user_email\n\nIf you want to check and edit the account go to %uri.\n\nInvestigate User:\nYahoo search  %user_email: %yahoo_user \nGoogle search %user_email: %google_user\n\n--\n%site");
+define('ADVUSER_DEFAULT_MODIFY_MAIL', ADVUSER_DEFAULT_NEW_MAIL); // "User email: %user_email\n\nIf you want to check and edit the account go to %uri.\n\nYahoo search %user_email: %yahoo_user \nGoogle search %user_email: %google_user\n\n--\n%site");
+define('ADVUSER_DEFAULT_NEW_ROLES', NULL);
+define('ADVUSER_DEFAULT_NEW_SUBJECT', 'A new user (%username) has just registered on %site.');
+define('ADVUSER_DEFAULT_MODIFY_SUBJECT', 'A user (%username) has just modified their account on %site.');
+define('ADVUSER_DEFAULT_NEW_NOTIFY', 1);
+define('ADVUSER_DEFAULT_MODIFY_NOTIFY', 1);
+define('ADVUSER_DEFAULT_LISTNO', 200);
+define('ADVUSER_DEFAULT_PROFILE_FIELDS', NULL);
+
+/**
+ * Implementation of hook_perm().
+ */
+function advuser_perm() 
+{
+	return array('administer advuser', 'access advuser', 'email users advuser');
+}
+
+/**
+ * Implementation of hook_menu().
+**/
+function advuser_menu($may_cache) 
+{
+	// Include filters
+	include_once(drupal_get_path('module','advuser').'/advuser_filters.inc');
+
+	$admin_access = user_access('administer advuser');
+	$access_access = user_access('access advuser');
+
+	if ($may_cache) 
+	{
+		$items[] = array(
+			'path' => 'admin/settings/advuser',
+			'title' => t('Advanced User'),
+			'description' => t('Advanced User Settings'),
+			'callback' => 'drupal_get_form',
+			'callback arguments' => array('advuser_settings'),
+			'access' =>  $admin_access,
+			'type' => MENU_NORMAL_ITEM
+		);
+
+		$items[] = array('path' => 'admin/user/advuser', 'title' => t('Advanced management'),
+		'description' => t('List, add, edit and email users.'),
+		'callback' => 'advuser_admin', 'callback arguments' => array('list'), 'access' => $access_access);
+	}
+	return $items;
+}
+
+function advuser_admin($callback_arg = '') 
+{
+  $op = isset($_POST['op']) ? $_POST['op'] : $callback_arg;
+
+  switch ($op) {
+    default:
+      if ($_POST['accounts'] && $_POST['operation'] == 'delete') {
+        $output = drupal_get_form('advuser_multiple_delete_confirm');
+      } else if ($_POST['accounts'] && $_POST['operation'] == 'email') {
+        $output = drupal_get_form('advuser_multiple_email_confirm');
+      } else {
+        $output = drupal_get_form('advuser_filter_form');
+        $output .= drupal_get_form('advuser_admin_account');
+      }
+  }
+  return $output;
+}
+
+function advuser_admin_account() {
+  $filter = advuser_build_filter_query();
+  $header = array(
+    array(),
+    array('data' => t('Username'), 'field' => 'u.name'),
+    array('data' => t('Status'), 'field' => 'u.status'),
+    t('Roles'),
+    array('data' => t('Member for'), 'field' => 'u.created', 'sort' => 'desc'),
+    array('data' => t('Last access'), 'field' => 'u.access'),
+    t('Operations')
+  );
+
+  $query = '';
+  if (module_exists('profile')) {
+    $fields = variable_get('advuser_profile_fields', ADVUSER_DEFAULT_PROFILE_FIELDS);
+    if (is_array($fields)) {
+      foreach ( $fields as $fid => $value) {
+        if ( $value ) {
+          $field = db_fetch_object(db_query('SELECT * FROM {profile_fields} WHERE fid = %d', $fid));
+          $ff[] = array('data' => t($field->title), 'field' => $field->name.value);
+          #$pquery .= ', '.$field->name.'.value as '.$field->name; 
+        }
+      }
+    }
+    $header = array_merge($header, $ff);
+  }
+
+  $sql = 'SELECT DISTINCT u.uid, u.name, u.status, u.created, u.access '.$pquery.' FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid '. $filter['join'] .' WHERE u.uid != 0 '. $filter['where'];
+
+  $sql .= tablesort_sql($header);
+  $query_count = 'SELECT COUNT(DISTINCT u.uid) FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid '. $filter['join'] .' WHERE u.uid != 0 '. $filter['where'];
+  $result = pager_query($sql, 50, 0, $query_count, $filter['args']);
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $options = array();
+
+  $operations = module_invoke_all('user_operations');
+  $operations = array_merge($operations,module_invoke_all('advuser_operations'));
+  foreach ($operations as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'unblock',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+  );
+
+  $destination = drupal_get_destination();
+
+  $status = array(t('blocked'), t('active'));
+  $roles = user_roles(1);
+
+  while ($account = db_fetch_object($result)) {
+    $accounts[$account->uid] = '';
+    $form['name'][$account->uid] = array('#value' => theme('username', $account));
+    $form['status'][$account->uid] =  array('#value' => $status[$account->status]);
+    $users_roles = array();
+    $roles_result = db_query('SELECT rid FROM {users_roles} WHERE uid = %d', $account->uid);
+    while ($user_role = db_fetch_object($roles_result)) {
+      $users_roles[] = $roles[$user_role->rid];
+    }
+    asort($users_roles);
+    $form['roles'][$account->uid][0] = array('#value' => theme('item_list', $users_roles));
+    $form['member_for'][$account->uid] = array('#value' => format_interval(time() - $account->created));
+    $form['last_access'][$account->uid] =  array('#value' => $account->access ? t('@time ago', array('@time' => format_interval(time() - $account->access))) : t('never'));
+    $form['operations'][$account->uid] = array('#value' => l(t('edit'), "user/$account->uid/edit", array(), $destination));
+    #$form['profile_ln'][$account->uid] = array('#value' => $account->profile_ln);
+  }
+  $form['accounts'] = array(
+    '#type' => 'checkboxes',
+    '#options' => $accounts
+  );
+  $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+
+  return $form;
+}
+
+/**
+ * Theme user administration overview.
+ */
+function theme_advuser_admin_account($form) {
+  // Overview table:
+  $header = array(
+    theme('table_select_header_cell'),
+    array('data' => t('Username'), 'field' => 'u.name'),
+    array('data' => t('Status'), 'field' => 'u.status'),
+    t('Roles'),
+    array('data' => t('Member for'), 'field' => 'u.created', 'sort' => 'desc'),
+    array('data' => t('Last access'), 'field' => 'u.access'),
+    t('Operations')
+  );
+
+  if (module_exists('profile')) {
+    $fields = variable_get('advuser_profile_fields', ADVUSER_DEFAULT_PROFILE_FIELDS);
+    if (is_array($fields)) {
+      foreach ( $fields as $fid => $value) {
+        if ( $value ) {
+          $field = db_fetch_object(db_query('SELECT * FROM {profile_fields} WHERE fid = %d', $fid));
+          $ff[] = array('data' => t($field->title), 'field' => $field->name);
+        }
+      }
+    }
+    $header = array_merge($header, $ff);
+  }
+
+  $output = drupal_render($form['options']);
+  if (isset($form['name']) && is_array($form['name'])) {
+    foreach (element_children($form['name']) as $key) {
+      $row = array(
+        drupal_render($form['accounts'][$key]),
+        drupal_render($form['name'][$key]),
+        drupal_render($form['status'][$key]),
+        drupal_render($form['roles'][$key]),
+        drupal_render($form['member_for'][$key]),
+        drupal_render($form['last_access'][$key]),
+        drupal_render($form['operations'][$key]),
+      );
+
+      if (module_exists('profile')) {
+        $fields = variable_get('advuser_profile_fields', ADVUSER_DEFAULT_PROFILE_FIELDS);
+        if (is_array($fields)) {
+          foreach ( $fields as $fid => $value) {
+            if ( $value ) {
+              $field = db_fetch_object(db_query('SELECT * FROM {profile_fields} WHERE fid = %d', $fid));
+              $row[] = drupal_render($form[$field->name][$key]);
+            }
+          }
+        }
+      }
+      $rows[] = $row;
+    }
+  }
+  else  {
+    $rows[] = array(array('data' => t('No users available.'), 'colspan' => '7'));
+  }
+
+  $output .= theme('table', $header, $rows);
+  if ($form['pager']['#value']) {
+    $output .= drupal_render($form['pager']);
+  }
+
+  $output .= drupal_render($form);
+
+  return $output;
+}
+
+/**
+ * Submit the user administration update form.
+ */
+function advuser_admin_account_submit($form_id, $form_values) {
+  $operations = module_invoke_all('user_operations');
+  $operations = array_merge($operations,module_invoke_all('advuser_operations'));
+  $operation = $operations[$form_values['operation']];
+  // Filter out unchecked accounts.
+  $accounts = array_filter($form_values['accounts']);
+  if ($function = $operation['callback']) {
+    // Add in callback arguments if present.
+    if (isset($operation['callback arguments'])) {
+      $args = array_merge(array($accounts), $operation['callback arguments']);
+    }
+    else {
+      $args = array($accounts);
+    }
+    call_user_func_array($function, $args);
+
+    cache_clear_all('*', 'cache_menu', TRUE);
+    drupal_set_message(t('The update has been performed.'));
+  }
+}
+
+function advuser_admin_account_validate($form_id, $form_values) {
+  $form_values['accounts'] = array_filter($form_values['accounts']);
+  if (count($form_values['accounts']) == 0) {
+    form_set_error('', t('No users selected.'));
+  }
+}
+
+function advuser_multiple_delete_confirm() {
+  $edit = $_POST;
+
+  $form['accounts'] = array('#prefix' => '<ul>', '#suffix' => '</ul>', '#tree' => TRUE);
+  // array_filter returns only elements with TRUE values
+  foreach (array_filter($edit['accounts']) as $uid => $value) {
+    $user = db_result(db_query('SELECT name FROM {users} WHERE uid = %d', $uid));
+    $form['accounts'][$uid] = array('#type' => 'hidden', '#value' => $uid, '#prefix' => '<li>', '#suffix' => check_plain($user) ."</li>\n");
+  }
+  $form['operation'] = array('#type' => 'hidden', '#value' => 'delete');
+
+  return confirm_form($form,
+                      t('Are you sure you want to delete these users?'),
+                      'admin/user/advuser', t('This action cannot be undone.'),
+                      t('Delete all'), t('Cancel'));
+}
+
+function advuser_multiple_delete_confirm_submit($form_id, $form_values) {
+  if ($form_values['confirm']) {
+    foreach ($form_values['accounts'] as $uid => $value) {
+      user_delete($form_values, $uid);
+    }
+    drupal_set_message(t('The users have been deleted.'));
+  }
+  return 'admin/user/advuser';
+}
+
+/**
+ * Email functionality
+ */
+function advuser_advuser_operations() {
+  $operations = array(
+    'email' => array(
+    'label' => t('Email selected users')
+    )
+  );
+  return $operations;
+}
+
+function advuser_multiple_email_confirm() {
+  $edit = $_POST;
+
+  $form['accounts'] = array('#prefix' => '<ul>', '#suffix' => '</ul>', '#tree' => TRUE);
+  // array_filter returns only elements with TRUE values
+  foreach (array_filter($edit['accounts']) as $uid => $value) {
+    $user = db_result(db_query('SELECT name FROM {users} WHERE uid = %d', $uid));
+    $form['accounts'][$uid] = array('#type' => 'hidden', '#value' => $uid, '#prefix' => '<li>', '#suffix' => check_plain($user) ."</li>\n");
+  }
+  $form['operation'] = array('#type' => 'hidden', '#value' => 'email');
+
+  $form['variables'] = array(
+      '#type' => 'markup', 
+      '#value' => '<div class="advuser-inset-panel"><strong>Substitution variables</strong> available in subject and email body<br/><em> %username, %site, %uri, %user_email, %google_user (search google for user email), %yahoo_user (search yahoo for user email)</em></div>'
+    );
+
+  $form['mailsubject'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Subject'),
+      '#required' => TRUE,
+    );
+  $form['mailbody'] = array(
+      '#type' => 'textarea', 
+      '#title' => t('Mail body'),
+      '#required' => TRUE,
+    );
+
+  return confirm_form($form,
+                      t('Are you sure you want to email these users?'),
+                      'admin/user/advuser', t('This action cannot be undone.'),
+                      t('Email'), t('Cancel'));
+}
+
+function advuser_multiple_email_confirm_submit($form_id, $form_values) {
+  if ($form_values['confirm']) {
+    foreach ($form_values['accounts'] as $uid => $value) {
+      $account = user_load(array('uid' => $uid));
+      if ( module_exists('lightcrm') ) {
+        _lightcrm_comment_add($uid, $edit['mailsubject'], $edit['mailbody']);
+      } else {
+        $from = variable_get("site_mail", ini_get("sendmail_from")); // http://drupal.org/node/77689
+        // these are invariant for all sent emails
+        $variables = _advuser_get_variables($account);
+        $form_values['mailsubject'] = strtr($form_values['mailsubject'], $variables);
+        $form_values['mailbody'] = strtr($form_values['mailbody'], $variables);
+        drupal_mail('advance-user-mail', $account->mail, $form_values['mailsubject'], $form_values['mailbody'], $from);
+      }
+    }
+    drupal_set_message(t('The users have been mailed.'));
+  }
+  return 'admin/user/advuser';
+}
+
+/**
+ * advuser settings page
+ */
+function advuser_settings() {
+
+  $form['advuser_mail'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Mail notifications on user account activity.'),
+      '#collapsible' => FALSE,
+      '#collapsed' => FALSE,
+    );
+
+  $form['advuser_mail']['variables'] = array(
+      '#type' => 'markup', 
+      '#value' => '<div class="advuser-inset-panel"><strong>Substitution variables</strong> available in subject and email body<br/><em> %username, %site, %uri, %user_email, %google_user (search google for user email), %yahoo_user (search yahoo for user email)</em></div>'
+    );
+
+  //New User Notification
+  $form['advuser_mail']['advuser_new_notify'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send notifications on new user registration'),
+      '#description' => t('Notify selected roles when new users register.'),
+      '#default_value' => variable_get('advuser_new_notify', ADVUSER_DEFAULT_NEW_NOTIFY),
+    );
+  $form['advuser_mail']['advuser_new_subject'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Mail subject'),
+      '#description' => t('The subject of the mail that is going to be sent to the user.  You may insert substitution variables within this item.'),
+      '#default_value' => variable_get('advuser_new_subject', ADVUSER_DEFAULT_NEW_SUBJECT),
+    );
+  $form['advuser_mail']['advuser_new_mail'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Mail body'),
+      '#description' => t('The mail that is going to be sent to the selected roles.  You may insert substitution variables within this item.'),
+      '#default_value' => variable_get('advuser_new_mail', ADVUSER_DEFAULT_NEW_MAIL),
+    );
+
+   //User change notification
+   $form['advuser_mail']['advuser_modify_notify'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send notifications on user profile updates'),
+      '#description' => t('Notify selected roles when users update their profiles.'),
+      '#default_value' => variable_get('advuser_modify_notify', ADVUSER_DEFAULT_MODIFY_NOTIFY),
+    );
+  $form['advuser_mail']['advuser_modify_subject'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Mail subject'),
+      '#description' => t('The subject of the mail that is going to be sent when a user modifies their profiles.  You may insert substitution variables within this item.'),
+      '#default_value' => variable_get('advuser_modify_subject', ADVUSER_DEFAULT_MODIFY_SUBJECT),
+    );
+  $form['advuser_mail']['advuser_modify_mail'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Mail body'),
+      '#description' => t('The mail that is going to be sent to the selected roles when a user modifies their account.  You may insert substitution variables within this item.'),
+      '#default_value' => variable_get('advuser_modify_mail', ADVUSER_DEFAULT_MODIFY_MAIL),
+    );
+        
+    //Maximum rows in dataset to display
+    $form['advuser_mail']['advuser_listno'] = array(
+      '#type' => 'select',
+      '#options' => drupal_map_assoc(array(0, 10, 25, 50, 75, 100, 125, 150, 175, 200)),
+      '#title' => t('Number of users in listing'),
+      '#description' => t('Sets how many users to display in table view'),
+      '#default_value' => variable_get('advuser_listno', ADVUSER_DEFAULT_LISTNO),
+    );
+    
+  $roles = user_roles(1);
+  /*$options = array();
+  foreach ( $roles as $rid => $role) {
+    $options["$rid"] = $role;
+  }*/
+  //print_r();
+  $values = array();
+  $options = variable_get('advuser_new_roles', ADVUSER_DEFAULT_NEW_ROLES);
+  $sel_roles_count = 0;
+  foreach ( (array)$options as $opt => $v ) {
+    if ( $v > 0 ) {
+      $values[] = $v;
+      $sel_roles_count++;
+    }
+  }
+  $form['advuser_mailonnew']['advuser_new_roles'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Notification Roles'),
+      '#description' => t('Roles that receive email notifications.'),
+      '#options' => $roles,
+      '#default_value' => $values /*variable_get('advuser_new_roles', ADVUSER_DEFAULT_NEW_ROLES)*/,
+    );
+
+  if ($sel_roles_count == 0) {
+    $form['advuser_mailonnew']['no_roles_sel_warning']
+      = array('#type' => 'markup', 
+              '#value' => '<div class="advuser-settings-warning"><strong>WARNING: No roles selected!</strong> - no email notifications will be sent.</div>');
+  }
+
+  if ( module_exists('profile') ) {
+    $form['advuser_profile'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Profile module special settings'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+
+    $fields = array();
+    $result = db_query('SELECT * FROM {profile_fields} ORDER BY category, weight');
+    while ( $row = db_fetch_object($result)) {
+      $fields[$row->fid] = $row->title;
+    }
+    
+    $values = array();
+    $options = variable_get('advuser_profile_fields', ADVUSER_DEFAULT_PROFILE_FIELDS);
+    foreach ( (array)$options as $opt => $v ) {
+      if ( $v > 0 ) {
+        $values[] = $v;
+      }
+    }
+    
+    $form['advuser_profile']['advuser_profile_fields'] = array(
+        '#type' => 'checkboxes',
+        '#description' => t('Profile fields to be used as filters for the users.'),
+        '#title' => t('Profile fields'),
+        '#options' => $fields,
+        '#default_value' => $values,
+      );    
+      
+  }
+  return system_settings_form($form);
+}
+
+/**
+ * Get a list of substitution variables for the user account
+ * @param $user the user account
+ * @return An associative array of substitution variables 
+ */
+function _advuser_get_variables(&$user) {
+  $variables = 
+    array(
+          '%username' => $user->name,
+          '%site' => variable_get("site_name", "drupal"), 
+          '%uri' => url('user/'. $user->uid, NULL, NULL, TRUE), 
+          '%user_email' => $user->mail,
+          /* FUTURE: '%user_signature' => $user->signature, */
+          '%google_user' => "http:/www.google.com/search?q=%22$user->mail%22",
+          '%yahoo_user' => "http://search.yahoo.com/search/?p=%22$user->mail%22", 
+          );
+  return $variables;
+}
+
+/**
+ * Construct a db query 'where' clause fragment so we can get a list of users to notify
+ * TODO: this needs cleanup.  There should be a way to gather a list of users who are 
+ * in roles.  
+ */
+function _advuser_get_roles_query_fragment($roles) {
+  // TODO: this needs to be cleaned up.
+  if (is_array($roles) ) {
+    foreach ((array)$roles as $role_k => $role_v) {
+      if ( $role_v > 0 ) {
+        if ( $role_v == DRUPAL_AUTHENTICATED_RID ) {
+          $role_where = ' OR 1';
+        }
+         else {
+          $role_where = ' OR ur.rid = '. $role_v;
+        }
+      }
+    }
+  }
+  return $role_where;
+}
+
+function _advuser_dbquery_users_to_notify($roles) {
+  $role_where = _advuser_get_roles_query_fragment($roles);
+  return db_query('SELECT u.mail, u.name FROM {users} u LEFT JOIN {users_roles} ur on u.uid = ur.uid WHERE 0 '. $role_where );
+}
+
+
+/**
+ * Handle user insertion (new users)
+ * TODO: DRY (don't repeat yourself!)
+ */
+
+function advuser_user_insert($edit, $user, $category) {
+  // send mail
+  if ( variable_get('advuser_new_notify', ADVUSER_DEFAULT_NEW_NOTIFY) ) {
+    $from = variable_get("site_mail", ini_get("sendmail_from"));
+    $body = variable_get('advuser_new_mail', ADVUSER_DEFAULT_NEW_MAIL);
+    $subject = variable_get('advuser_new_subject', ADVUSER_DEFAULT_NEW_SUBJECT);
+
+    // these are invariant for all sent emails
+    $variables = _advuser_get_variables($user);
+    $user_subject = strtr($subject, $variables);
+    $user_body = strtr($body, $variables);
+
+    watchdog('advuser', "Sending user account mail: subj='$user_subject' body='$user_body'");
+
+    $roles = variable_get('advuser_new_roles', ADVUSER_DEFAULT_NEW_ROLES);
+    $result = _advuser_dbquery_users_to_notify($roles);
+    while ($row = db_fetch_object($result)) {
+      drupal_mail('advanced-user-mail', $row->mail, $user_subject, $user_body, $from);
+    }
+  }
+}
+
+/**
+ * TODO: Need 'send test email' -> sends test email for current user account, to current user account
+ */
+
+/**
+ * Handle user edit
+ * TODO: DRY (don't repeat yourself!)
+ */
+function advuser_user_update($edit, $user, $category) {
+  // send mail
+  if ( variable_get('advuser_modify_notify', ADVUSER_DEFAULT_MODIFY_NOTIFY) ) {
+    $from = variable_get("site_mail", ini_get("sendmail_from"));
+    $body = variable_get('advuser_modify_mail', ADVUSER_DEFAULT_MODIFY_MAIL);
+    $subject = variable_get('advuser_modify_subject', ADVUSER_DEFAULT_MODIFY_SUBJECT);
+
+    // these are invariant for all sent emails
+    $variables = _advuser_get_variables($user);
+    $user_subject = strtr($subject, $variables);
+    $user_body = strtr($body, $variables);
+
+    watchdog('advuser', "Sending user account mail: subj='$user_subject' body='$user_body'");
+
+    $roles = variable_get('advuser_new_roles', ADVUSER_DEFAULT_NEW_ROLES);
+    $result = _advuser_dbquery_users_to_notify($roles);
+    while ($row = db_fetch_object($result)) {
+      drupal_mail('advanced-user-mail', $row->mail, $user_subject, $user_body, $from);
+    }
+  }
+}
+
+
+/** 
+ * hook_user implementation  
+ */
+function advuser_user($type, &$edit, &$user, $category = NULL) {
+  switch ($type) {
+  case 'insert':
+    return advuser_user_insert($edit, $user, $category);
+  case 'update':
+    return advuser_user_update($edit, $user, $category);
+  }
+}

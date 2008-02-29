@@ -1,0 +1,19 @@
+/**
+ * $Id: htmlarea.css,v 1.2 2007/02/19 05:54:11 gordon Exp $
+ *
+ * Fix up any htmlarea styles that are broken by Drupal Themes (mainly
+ * garland).
+ */
+
+.htmlarea table {
+  width: auto;
+  margin: 0px 0px;
+}
+
+.htmlarea tbody {
+  border-top: none;
+}
+
+.htmlarea td, .htmlarea th {
+  padding: 0;
+}

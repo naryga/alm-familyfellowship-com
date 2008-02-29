@@ -1,0 +1,9 @@
+; $Id: quotes.info,v 1.1 2007/02/14 15:28:35 jhriggs Exp $
+name = "Quotes"
+description = "Allows users to maintain personal lists of quotations and display quotes in one or more blocks."
+version = "$Name: DRUPAL-5--1-1 $"
+
+; Information added by drupal.org packaging script on 2007-02-19
+version = "5.x-1.1"
+project = "quotes"
+

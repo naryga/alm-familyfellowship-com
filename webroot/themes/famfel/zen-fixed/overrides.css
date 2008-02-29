@@ -1,0 +1,12 @@
+body {
+  min-width: 800px;
+}
+
+#page {
+  width: 800px;      /* page width  */
+  margin: 10px auto; /* center the page */
+}
+
+#logo-title {
+  margin: 10px 0 0 0;
+}

@@ -1,0 +1,136 @@
+<?php
+// $Id: quotes.install,v 1.4.2.1 2007/02/19 19:33:52 jhriggs Exp $
+
+/**
+ * Handles installation and updates for the quotes module.
+ *
+ * @version $Id: quotes.install,v 1.4.2.1 2007/02/19 19:33:52 jhriggs Exp $
+ * @copyright Copyright (c) 2003-2007 Jim Riggs.  All rights reserved.
+ * @author Jim Riggs <drupal at jim and lissa dot com>
+ */
+
+/********************************************************************
+ * Drupal Hooks
+ ********************************************************************/
+
+/**
+ * Implementation of hook_install().
+ */
+function quotes_install() {
+  db_query('
+    CREATE TABLE {quotes} (
+      nid INTEGER NOT NULL,
+      vid INTEGER NOT NULL PRIMARY KEY,
+      author VARCHAR(255) NOT NULL,
+      promote INTEGER NOT NULL
+    ) /*!40100 DEFAULT CHARACTER SET utf8 */
+  ');
+  db_query('CREATE INDEX {quotes}_nid ON {quotes} (nid)');
+  db_query('CREATE INDEX {quotes}_promote ON {quotes} (promote)');
+
+  db_query('
+    CREATE TABLE {quotes_blocks} (
+      bid INTEGER NOT NULL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      block_type INTEGER NOT NULL,
+      nid_filter TEXT NOT NULL,
+      rid_filter TEXT NOT NULL,
+      uid_filter TEXT NOT NULL,
+      tid_filter TEXT NOT NULL,
+      cron_interval INTEGER NOT NULL,
+      cron_step INTEGER NOT NULL,
+      cron_last INTEGER NOT NULL,
+      vid INTEGER NOT NULL
+    ) /*!40100 DEFAULT CHARACTER SET utf8 */
+  ');
+
+  if ($_GLOBALS['db_type'] == 'pgsql') {
+    db_query('CREATE SEQUENCE {quotes}_bid_seq');
+  }
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function quotes_uninstall() {
+  db_query('DROP TABLE {quotes}');
+  db_query('DROP TABLE {quotes_blocks}');
+
+  if ($_GLOBALS['db_type'] == 'pgsql') {
+    db_query('DROP SEQUENCE {quotes}_bid_seq');
+  }
+}
+
+/**
+ * Updates existing tables to UTF-8.
+ */
+function quotes_update_1() {
+  return _system_update_utf8(array('quotes', 'quotes_blocks'));
+}
+
+/**
+ * Adds vid column to quotes table.
+ */
+function quotes_update_2() {
+  global $db_type;
+
+  $items = array();
+  $items[] = update_sql('ALTER TABLE {quotes} ADD vid INTEGER NOT NULL');
+  $items[] = update_sql('UPDATE {quotes} SET vid = nid');
+
+  if ($db_type == 'pgsql') {
+    $items[] = update_sql('ALTER TABLE {quotes} DROP CONSTRAINT {quotes}_pkey');
+  }
+  else {
+    $items[] = update_sql('ALTER TABLE {quotes} DROP PRIMARY KEY');
+  }
+
+  $items[] = update_sql('ALTER TABLE {quotes} ADD PRIMARY KEY (nid, vid)');
+
+  return $items;
+}
+
+/**
+ * Fixes the primary key on the quotes table, adds indexes on the nid
+ * and promote columns, and deletes the quotes_version variable.
+ */
+function quotes_update_3() {
+  global $db_type;
+
+  $items = array();
+
+  if ($db_type == 'pgsql') {
+    $items[] = update_sql('ALTER TABLE {quotes} DROP CONSTRAINT {quotes}_pkey');
+  }
+  else {
+    $items[] = update_sql('ALTER TABLE {quotes} DROP PRIMARY KEY');
+  }
+
+  $items[] = update_sql('ALTER TABLE {quotes} ADD PRIMARY KEY (vid)');
+  $items[] = update_sql('CREATE INDEX {quotes}_nid ON {quotes} (nid)');
+  $items[] = update_sql('CREATE INDEX {quotes}_promote ON {quotes} (promote)');
+
+  variable_del('quotes_version');
+
+  return $items;
+}
+
+/**
+ * Removes the title column and adds the additional fields to
+ * quotes_blocks to support cron.
+ */
+function quotes_update_4() {
+  global $db_type;
+
+  $items = array();
+
+  $items[] = update_sql('ALTER TABLE {quotes_blocks} DROP COLUMN title');
+  $items[] = update_sql('ALTER TABLE {quotes_blocks} ADD cron_interval INTEGER NOT NULL');
+  $items[] = update_sql('ALTER TABLE {quotes_blocks} ADD cron_step INTEGER NOT NULL');
+  $items[] = update_sql('ALTER TABLE {quotes_blocks} ADD cron_last INTEGER NOT NULL');
+  $items[] = update_sql('ALTER TABLE {quotes_blocks} ADD vid INTEGER NOT NULL');
+
+  return $items;
+}
+
+?>

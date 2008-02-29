@@ -1,0 +1,12 @@
+; $Id: flashvideo.info,v 1.5 2007/07/17 02:56:42 travist Exp $
+name = FlashVideo
+description = Provides a way to attach Flash video to a node.
+dependencies = upload
+
+
+
+; Information added by drupal.org packaging script on 2007-07-22
+version = "5.x-2.3"
+project = "flashvideo"
+datestamp = "1185070807"
+

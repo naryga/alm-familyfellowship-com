@@ -1,0 +1,10 @@
+; $Id: site_user_list_roles.info,v 1.1.2.1 2007/05/22 20:49:00 pukku Exp $
+name = Site User List Roles
+description = Allows Site User List to work with user roles
+
+
+; Information added by drupal.org packaging script on 2007-07-13
+version = "5.x-1.x-dev"
+project = "site_user_list"
+datestamp = "1184328628"
+

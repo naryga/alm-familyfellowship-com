@@ -1,0 +1,2757 @@
+<?php
+// $Id: sweeper.module,v 1.189.2.1 2007/07/25 19:09:58 dries Exp $
+
+/**
+ * @file
+ * Support for configurable user profiles.
+**/
+
+/**
+ * Private field, content only available to privileged users.
+ * define('PROFILE_PRIVATE', 1);
+**/
+
+define('SWEEPERNAME_MAX_LENGTH', 20);
+define('SWEEPERNAME_MIN_LENGTH', 5);
+define('SWEEPERPASS_MAX_LENGTH', 8);
+define('SWEEPERPASS_MIN_LENGTH', 5);
+// the questions array
+
+
+//print_r($question_array);
+/**
+ * Implementation of hook_help().
+**/
+function sweeper_help($section) 
+{
+  switch ($section) {
+    case 'admin/help#sweeper':
+      $output = '<p>'. t('The sweeper module creates the sweeper account once billing is complete and allows customers to download the client.') .'</p>';
+      return $output;
+    case 'admin/user/sweeper':
+      return '<p>'. t('Here you can define custom fields that users can fill in in their user profile (such as <em>country</em>, <em>real name</em>, <em>age</em>, ...).') .'</p>';
+  }
+}
+
+/**
+* Valid permissions for this module
+* @return array An array of valid permissions for the onthisdate module
+*/
+function sweeper_perm() 
+{
+  return array('access sweeper');
+} 
+// function onthisdate_perm()
+
+
+/**
+ * Implementation of hook_menu().
+**/
+function sweeper_menu($may_cache) 
+{
+  $items = array();
+
+  if ($may_cache) 
+  {
+		$items[] = array('path' => 'sweeper',
+				'title' => t('Sweeper Download'),
+				'callback' => 'sweeper_all',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_NORMAL_ITEM
+		);
+		$items[] = array('path' => 'sweeper/signup',
+				'title' => t('Filter Login Information'),
+				'callback' => 'sweeper_profile_manager_info',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'confirmation',
+				'title' => t('Account Confirmation'),
+				'callback' => 'sweeper_confirmation',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'cancel',
+				'title' => t('Account Cancellation'),
+				'callback' => 'sweeper_cancel',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'payment',
+				'title' => t('Check Out'),
+				'callback' => 'sweeper_subscription_create',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'change_card',
+				'title' => t('Change Credit Cards'),
+				'callback' => 'sweeper_change_card',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'change_plan',
+				'title' => t('Change Subscription Plan'),
+				'callback' => 'sweeper_change_plan',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'my_account/edit',
+				'title' => t('Edit Contact Info'),
+				'callback' => 'sweeper_edit_user',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);		
+		$items[] = array('path' => 'customer_care/account_password_retrieval',
+						'title' => t('Retreive your My Account Password'),
+						'callback' => 'sweeper_account_password_retrieval',
+						'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'customer_care/profile_password_retrieval',
+						'title' => t('Retreive your Profile Manager Password'),
+						'callback' => 'sweeper_profile_password_retrieval',
+						'access' => true,
+						'type' => MENU_CALLBACK
+		);				
+		$items[] = array('path' => 'customer_care/profile_security_retrieval',
+						'title' => t('Retreive your Profile Security Q & A'),
+						'callback' => 'sweeper_profile_security_retrieval',
+						'access' => true,
+						'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'customer_care/contact',
+						'title' => t('Thank you for contacting Customer Care'),
+						'callback' => 'sweeper_customer_care_contact',
+						'access' => true,
+						'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'send_page',
+				'title' => t('Send this page to a friend'),
+				'callback' => '_sweeper_email_page',
+				'access' => user_access(''),
+				'type' => MENU_CALLBACK
+		);
+		/*  
+		$items[] = array('path' => 'sweeper',
+			'title' => t('Download the Client'),
+			'callback' => 'sweeper_download',
+			'type' => MENU_CALLBACK
+		);
+	    $items[] = array('path' => 'admin/user/profile',
+			'title' => t('Profiles'),
+			'description' => t('Create customizable fields for your users.'),
+			'callback' => 'profile_admin_overview'
+		);
+	    $items[] = array('path' => 'admin/user/profile/add',
+			'title' => t('Add field'),
+			'callback' => 'drupal_get_form',
+			'callback arguments' => array('profile_field_form'),
+			'type' => MENU_CALLBACK
+		);
+	    $items[] = array('path' => 'admin/user/profile/autocomplete',
+			'title' => t('Profile category autocomplete'),
+			'callback' => 'profile_admin_settings_autocomplete',
+			'access' => user_access('administer users'),
+			'type' => MENU_CALLBACK
+		);
+	    $items[] = array('path' => 'admin/user/profile/edit',
+			'title' => t('Edit field'),
+			'callback' => 'drupal_get_form',
+			'callback arguments' => array('profile_field_form'),
+			'type' => MENU_CALLBACK
+		);
+	    $items[] = array('path' => 'admin/user/profile/delete',
+	    	'title' => t('Delete field'),
+			'callback' => 'drupal_get_form',
+			'callback arguments' => array('profile_field_delete'),
+			'type' => MENU_CALLBACK
+		);
+	    $items[] = array('path' => 'profile/autocomplete', 
+			'title' => t('Profile autocomplete'),
+	   		'callback' => 'profile_autocomplete',
+	      	'access' => 1,
+	    	'type' => MENU_CALLBACK
+		);
+		*/
+  }
+
+  return $items;
+}
+
+/**
+ * Confirmation Page of account and order details before sending to the 2checkout.com page for payment.
+ */
+function sweeper_confirmation() 
+{
+	global $user;
+	global $account;
+	//echo "<pre>".print_r($account)."</pre><h2><span>That's a wrap!</span></h2>";
+	$debug = false;
+
+	// Load user data if it's not there
+	$user = user_load(array("name" => $user->name)); 
+	$account = user_load(array("name" => $account->name));
+
+	//$debug variable is used to easily turn off debugging code and output
+  if($debug){ watchdog('content', t('Debugging is on for sweeper_confirmation.')); }
+
+	//$content variable is used to collect the HTML code to output.
+	$content .= "<h4>Please review account details and plan type below before checking out.</h4>".
+	"<br /><p><a href='/user/".$user->uid."/edit/Step+3%3A+My+Contact+Information'>Click here</a> to update this information, or fill out the payment form to the right to complete the subscription process.</p>";
+
+	/****** Validation of data ******/
+	$errors =_sweeper_validate_sweeper_credentials($user->profile_sweeper_username,$user->profile_sweeper_password);
+	
+	// if($errors){
+	// 		foreach($errors as $error){
+	// 			$content .= $error . "<br>";
+	// 		}
+	// 	}
+	
+	$content .= "
+	<div class=\"left review_account_info\">
+		<h3>Account Details:</h3>
+			
+			<p>
+				<strong>Username:</strong>
+				<td>".$user->name."</td>
+			</p>
+			<p>
+				<strong>Email Address:</strong>
+				".$user->mail."
+			</p>
+			<p>
+				<strong>Security Question</strong>
+				".$user->profile_security_q."
+			</p>
+			<p>
+				<strong>Security Answer</strong>
+				".$user->profile_security_a."
+			</p>
+			<p>
+				<strong>Full Name</strong>
+				".$user->profile_first_name." ".$user->profile_middle_name." ".$user->profile_last_name."
+			</p>
+			<p>
+				<strong>Phone Number</strong>
+				".$user->profile_phone."
+			</p>
+			<p>
+				<strong>Address :</strong><br />
+				".$user->profile_street_address." ".$user->profile_street_address_2."<br />
+				".$user->profile_city.", ".$user->profile_state_province." ".$user->profile_zip_code."<br />
+				".$user->profile_country."
+			</p>
+			<p>
+				<strong>Payment Plan</strong>
+				".$user->profile_current_plan."
+			</p>
+		</table>
+	</div>";
+	
+	$subscription = _sweeper_derive_plan($user->profile_current_plan);
+	if($user->profile_first_name){
+		$fname = $user->profile_first_name;
+		$lname = $user->profile_last_name;
+	} else {
+		$uname_array = explode(" ", $user->profile_full_name);
+		$fname = $uname_array[0];
+		$lname = $uname_array[1];
+	}
+	$content .= 
+	'	<div class="right">'.
+	'		<h3>Payment Form</h3>'.
+	'		<form method="post" action="/payment">'.
+	'			<p>'.
+	'				<label for="fname">Fist Name</label><br />'.
+	'				<input type="text" name="firstName" id="fname" value="'.$fname.'" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="lname">Last Name</label><br />'.
+	'				<input type="text" name="lastName" id="lname" value="'.$lname.'" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="email">Email</label><br />'.
+	'				<input type="text" name="email" id="email" value="'.$user->mail.'" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="address">Address</label><br />'.
+	'				<input type="text" name="address" id="address" value="'.$user->profile_street_address.'" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="city">City</label><br />'.
+	'				<td><input type="text" name="city" id="city" value="'.$user->profile_city.'" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="state">State/Province</label><br />'.
+	'				<input type="text" name="state" id="state" value="'.$user->profile_state_province.'" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="zip">Zip/Postal Code</label><br />'.
+	'				<input type="text" name="zip" id="zip" value="'.$user->profile_zip_code.'" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="cardNumber">Credit Card Number</label><br />'.
+	'				<p><strong>Please enter numbers only, do not enter any dashes (-)!</strong></p>'.
+	'				<input type="text" name="cardNumber" id="cardNumber" value="" />'.
+	'			</p>'.
+	'			<p>'.
+	'				<label for="expirationDate">Credit Card Expiration</label><br />'.
+//	'				<input type="text" name="expirationDay" id="expirationDay" value="DD" size="2" maxlenght="2" />&ndash;<input type="text" name="expirationYear" id="expirationYear" value="YYYY" size="4" maxlength="4" />'.
+	"				<select name=\"expirationDay\" id=\"expirationDay\">".
+	"					<option>01</option>".
+	"					<option>02</option>".
+	"					<option>03</option>".
+	"					<option>04</option>".
+	"					<option>05</option>".
+	"					<option>06</option>".
+	"					<option>07</option>".
+	"					<option>08</option>".
+	"					<option>09</option>".
+	"					<option>10</option>".
+	"					<option>11</option>".
+	"					<option>12</option>".
+	"				</select>/<select name=\"expirationYear\" id=\"expirationYear\">".
+	"					<option>2007</option>".
+	"					<option>2008</option>".
+	"					<option>2009</option>".
+	"					<option>2010</option>".
+	"					<option>2011</option>".
+	"					<option>2012</option>".
+	"					<option>2013</option>".
+	"					<option>2014</option>".
+	"					<option>2015</option>".
+	"					<option>2016</option>".
+	"					<option>2017</option>".
+	"				</select>".
+	'			</p>'.
+	'			<p>'.
+	'				<input type="hidden" name="subscription" value="'.$subscription.'" />'.
+	'				<input type="submit" name="submit" value="Subscribe!" />'.
+	'			</p>'.
+	'		</form>'.
+	'	</div>';
+	
+	// ------------------------ Debug Code ---------------------------------
+	if($debug){
+		$results = db_query("select f.title,v.uid,v.value from profile_fields f, profile_values v where f.fid = v.fid and v.uid = ".$user->uid." ");
+		if($results){
+			$content .= "<br><br>Profile Details (". db_num_rows($results)."):<br>";
+			$content .= "<table>";
+			while($item = db_fetch_array($results)){
+				$content .= "<tr>";
+				$content .= "<th>Row ".++$i."</th>";
+				$content .= "<td>".$item['title']."</td><td>".$item['uid']."</td><td>".$item['value']."</td>";
+				$content .= "</tr>";
+			} //end while db results
+			$content .= "</table>";
+		} // end if $results
+	} // end $debug
+	
+	if($debug){
+		$content .= "<br>User Information:<br>";
+		$content .= "<table>";
+		foreach($user as $name => $items){
+			$content .= "<tr>";
+			$content .= "<th>".$name."</th><td>".$items."</td>";
+			$content .= "</tr>";
+		} // end foreach user attribute
+		$content .= "</table>";
+	} // end if debug
+	// ------------------------ End Debug Code ---------------------------------
+
+	return $content;
+}
+
+function sweeper_subscription_create()
+{
+	global $user;
+	global $account;
+	
+	$user = user_load(array("name" => $user->name)); 
+	
+	$debug = false;
+
+	include ("data.php");
+	include ("authnetfunction.php");
+
+	//Define variables to send
+
+	$firstName = $_POST['firstName'];
+	$lastName = $_POST['lastName'];
+	$cardNumber = $_POST['cardNumber'];
+	$expirationDate = $_POST['expirationYear'] . '-' . $_POST['expirationDay'];
+	$email = $_POST['email'];
+	$address = $_POST['address'];
+	$city = $_POST['city'];
+	$state = $_POST['state'];
+	$zip = $_POST['zip'];
+	
+	list($unit, $length, $totalOccurrences, $amount, $subscriptionName) = _sweeper_derive_plan2($_POST['subscription']);
+
+	$subscriptionId = "111" ;
+	$refId = "YourReferenceID";
+	$name = "fdsfsd";
+	// $length = "730";
+	// $unit = "days";
+	//$startDate = "2007-08-27";
+	$startDate = date("Y-m-d");
+	// $totalOccurrences = "1";
+	// $trialOccurrences = "0";
+	// $trialAmount = "0";
+	// $cardNumber = "5424000000000015";
+	// $expirationDate = "2009-09";
+	// $firstName = "firstname";
+	// $lastName = "lastname";
+
+	$invoice_num = $user->uid.'_'.$user->profile_aid;
+	
+	//Build XML to post
+	$post_xml =
+	"<?xml version=\"1.0\" encoding=\"utf-8\"?>".
+	"<ARBCreateSubscriptionRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\">".
+	"	<merchantAuthentication>".
+	"		<name>" . $loginname . "</name>".
+	"		<transactionKey>" . $transactionkey . "</transactionKey>".
+	"	</merchantAuthentication>".
+	"	<refId>". $refId ."</refId>".
+	"	<subscription>".
+	"		<name>". $subscriptionName ."</name>".
+	"		<paymentSchedule>".
+	"			<interval>".
+	"				<length>". $length ."</length>".
+	"				<unit>". $unit ."</unit>".
+	"			</interval>".
+	"			<startDate>" . $startDate . "</startDate>".
+	"			<totalOccurrences>". $totalOccurrences . "</totalOccurrences>".
+	"		</paymentSchedule>".
+	"		<amount>". $amount ."</amount>".
+	"		<payment>".
+	"			<creditCard>".
+	"				<cardNumber>" . $cardNumber . "</cardNumber>".
+	"				<expirationDate>" . $expirationDate . "</expirationDate>".
+	"			</creditCard>".
+	"		</payment>".
+	"		<order>".
+	"			<invoiceNumber>".$invoice_num."</invoiceNumber>".
+	"		</order>".
+	"		<customer>".
+	"			<email>".$email."</email>".
+	"		</customer>".
+	"		<billTo>".
+	"			<firstName>". $firstName . "</firstName>".
+	"			<lastName>" . $lastName . "</lastName>".
+	"			<address>". $address ."</address>".
+	"			<city>". $city ."</city>".
+	"			<state>". $state ."</state>".
+	"			<zip>". $zip ."</zip>".
+	"		</billTo>".
+	"		<shipTo>".
+	"			<firstName>". $user->profile_first_name ."</firstName>".
+	"			<lastName>". $user->profile_last_name ."</lastName>".
+	"			<address>". $user->profile_street_address ."</address>".
+	"			<city>". $user->profile_city ."</city>".
+	"			<state>". $user->profile_state_province ."</state>".
+	"			<zip>". $user->profile_zip_code ."</zip>".
+	"		</shipTo>".
+	"	</subscription>".
+	"</ARBCreateSubscriptionRequest>";
+
+
+	//Send the XML via curl
+	$response = send_request_via_curl($host,$path,$post_xml);
+	
+	//If the connection and send worked $response holds the return from Authorize.Net
+	if ($response)
+	{
+		/*
+		parse_return is a function that shows how you can parse though the XML return if these other options are not avilable to      you.
+		*/
+		list ($refId, $resultCode, $code, $text, $subscriptionId) =parse_return($response);
+		
+		// Validate user payment
+		if ($text == "Successful.") 
+		{
+			_sweeper_set_payment_flag(true,$user->uid);
+			_sweeper_set_subscription_id($subscriptionId,$user->uid);
+			watchdog('user', t('Payment received for '.$user->name.'.'));
+			if ($_SERVER['SERVER_NAME']) {
+				drupal_goto('/sweeper');
+			}
+			else {
+				drupal_goto('http://'.$_SERVER['SERVER_NAME'].'/sweeper');
+			}
+			
+			#drupal_goto('/sweeper');
+		} else {
+			_sweeper_set_payment_flag(false,$user->uid);
+			watchdog('user', t('Payment request returned the following error: '.$text.'.'));
+			
+			$content .= "<h3>We apologize for the inconvinience...</h3>".
+			"<p>But the following error was returned during the processing of your credit card information:</p>".
+			"<p>$text</p>";
+			
+			$content .=
+			"<h3>Please resubmit your Credit Card Billing information</h3>".
+			
+			$subscription = $_POST['subscription'];// _sweeper_derive_plan();
+			if($user->profile_first_name){
+				$fname = $user->profile_first_name;
+				$lname = $user->profile_last_name;
+			} else {
+				$uname_array = explode(" ", $user->profile_full_name);
+				$fname = $uname_array[0];
+				$lname = $uname_array[1];
+			}
+			$content .= 
+			'<form method="post" action="/payment">
+			<table>
+				<tr>
+					<td><label for="fname">Fist Name</label></td>
+					<td><input type="text" name="firstName" id="fname" value="'.$fname.'" /></td>
+				</tr><tr>
+					<td><label for="lname">Last Name</label></td>
+					<td><input type="text" name="lastName" id="lname" value="'.$lname.'" /></td>
+				</tr><tr>
+					<td><label for="email">Email</label></td>
+					<td><input type="text" name="email" id="email" value="'.$user->mail.'" /></td>
+				</tr><tr>
+					<td><label for="address">Address</label></td>
+					<td><input type="text" name="address" id="address" value="'.$user->profile_street_address.'" /></td>
+				</tr><tr>
+					<td><label for="city">City</label></td>
+					<td><input type="text" name="city" id="city" value="'.$user->profile_city.'" /></td>
+				</tr><tr>
+					<td><label for="state">State/Province</label></td>
+					<td><input type="text" name="state" id="state" value="'.$user->profile_state_province.'" /></td>
+				</tr><tr>
+					<td><label for="zip">Zip/Postal Code</label></td>
+					<td><input type="text" name="zip" id="zip" value="'.$user->profile_zip_code.'" /></td>
+				</tr><tr>
+					<td><p><label for="cardNumber">Credit Card Number</label></p></td>
+					<td><input type="text" name="cardNumber" id="cardNumber" value="" /></td>
+				</tr><tr>
+					<td><p><label for="expirationDate">Credit Card Expiration</label></p></td>
+					<td>'.
+				//	'				<input type="text" name="expirationDay" id="expirationDay" value="DD" size="2" maxlenght="2" />&ndash;<input type="text" name="expirationYear" id="expirationYear" value="YYYY" size="4" maxlength="4" />'.
+					"				<select name=\"expirationDay\" id=\"expirationDay\">".
+					"					<option>01</option>".
+					"					<option>02</option>".
+					"					<option>03</option>".
+					"					<option>04</option>".
+					"					<option>05</option>".
+					"					<option>06</option>".
+					"					<option>07</option>".
+					"					<option>08</option>".
+					"					<option>09</option>".
+					"					<option>10</option>".
+					"					<option>11</option>".
+					"					<option>12</option>".
+					"				</select>/<select name=\"expirationYear\" id=\"expirationYear\">".
+					"					<option>2007</option>".
+					"					<option>2008</option>".
+					"					<option>2009</option>".
+					"					<option>2010</option>".
+					"					<option>2011</option>".
+					"					<option>2012</option>".
+					"					<option>2013</option>".
+					"					<option>2014</option>".
+					"					<option>2015</option>".
+					"					<option>2016</option>".
+					"					<option>2017</option>".
+					"				</select>".
+'					</td>
+				</tr><tr>
+					<td colspan="2">
+						<input type="hidden" name="subscription" value="'.$subscription.'" />
+						<input type="submit" name="submit" value="Subscribe!" />
+					</td>
+				</tr>
+			</table>	
+			</form>';
+		}
+		
+	}
+	else
+	{
+		$content .= "send failed <br>";
+	}
+	
+	return $content;
+}
+
+/**
+ * Sweeper download page main content.
+ * 
+ * Validates that the user payment went through, creates the sweeper account, 
+ * and sets the flags in the DB that both have been accomplished.  Also sends 
+ * an email when this is accomplished.
+ * 
+ * Contains the link to the client download.
+**/
+function sweeper_all() 
+{
+	global $user;
+	
+	// Load user data if it's not there
+	$user = user_load(array("name" => $user->name));
+	//$debug variable is used to easily turn off debugging code and output
+
+	$debug = false;
+	
+	//$content variable is used to collect the HTML code to output.
+	$content = "";
+
+	
+	
+	// Call the Sweeper account setup if the user is paid and the account has not yet been created
+	if(_sweeper_check_payment($user->uid))
+	{ 
+		$status1 = _sweeper_verify_sweeper($user->profile_sweeper_username);
+		if(_sweeper_check_sweeper($user->uid) && $status1)
+		{
+			// No action is necessary, the account already exists
+			if($debug){ watchdog('user', t('Debug: '.$user->name.' Account is paid for and Sweeper account exists.')); }
+		} 
+		else 
+		{
+			// Call the sweeper creation function
+			$status = _sweeper_create_sweeper($user->profile_sweeper_username,$user->profile_sweeper_password, $user->mail, $user->profile_first_name, $user->profile_last_name);
+			$status2 = _sweeper_verify_sweeper($user->profile_sweeper_username);
+			// if the verify tells us that the sweeper account exists, we're good to go!  Set the flag and show the recipt.
+			if ($status2) 
+			{
+				_sweeper_set_sweeper_flag($status2,$user->uid);
+				$rem_roles = null;
+
+				_sweeper_set_role('active', $user->uid, true);
+				// if (!$status) {
+				// 	$content .= "<div class='messages error'><p class='notice'>There was an error with your account creation. Please contact <a href='/customer_care'>customer care</a></p></div>";
+				// }
+				watchdog('user', t('Sweeper account created for '.$user->name.'.'));
+				/*****************Content for first time downloaders********************/
+				list($unit, $length, $totalOccurrences, $amount, $subscriptionName) = _sweeper_derive_plan2(_sweeper_derive_plan($user->profile_current_plan));
+				$content .= 
+				"<h3>Your payment was successful, thank you!</h3>".
+				"<p>".
+				"	We are exited for the opportunity work with you to achieve a safer".
+				"	internet experience for your family!  Below are the details of this".
+				"	transaction.  Please save them for your records.".
+				"</p>".
+				"<table>".
+				"	<tr><td>Name: </td><td>{$user->profile_full_name}</td></tr>".
+				"	<tr class=\"even\"><td>Plan:</td><td>$subscriptionName</td></tr>".
+				"	<tr><td>Amount:</td><td>$amount</td></tr>".
+				"	<tr class=\"even\"><td>Address:</td><td>{$user->profile_street_address}</td></tr>".
+				"	<tr><td>Address cont.:</td><td>{$user->profile_street_address_2}</td></tr>".
+				"	<tr class=\"even\"><td>City:</td><td>{$user->profile_city}</td></tr>".
+				"	<tr><td>State/Province:</td><td>{$user->profile_state_province}</td></tr>".
+				"	<tr class=\"even\"><td>Country</td><td>{$user->profile_country}</td></tr>".
+				"	<tr><td>Zip/Postal Code</td><td>{$user->profile_zip_code}</td></tr>".
+				"</table>".
+				"<br /><br />";
+
+				/******************Send Email with Account details**********************/
+
+				$pass = user_password();
+				$subject = "Follow up account details at FamilyFellowship.com";
+				$body = 
+
+				"Thank you for signing up for FamilyFellowship.com's Managed Internet Filtering Service! Below you will find your Filter Profile manager login information. Please keep it secure, as you will need it to administer your filter. We recommend that you record it in a safe, secure place and then delete this email.\n\n".
+				"After you have downloaded and installed the filter profile manager you can login to your profile manager by double clicking on the wheel icon in the lower right hand corner of your screen, next to the clock. Have questions? Please see our frequently asked questions and video tutorials as http://familyfellowship.com/customer_care\n\n".
+				"My Account Username: \n\t".$user->name."\n".
+				"My Account Password: \n\t".$_SESSION['password']."\n\n".
+				"Filter Client Username: \n\t".$user->profile_sweeper_username."\n".
+				"Filter Client Password: \n\t".$user->profile_sweeper_password."\n\n".
+				"Security Question: \n\t".$user->profile_security_q."\n".
+				"Security Answer: \n\t".$user->profile_security_a."\n\n".
+				"The FamilyFellowship.com Support Team.";
+				unset($_SESSION['password']);
+				$subject2 = "Welcome to FamilyFellowship.com!";
+				$body2 = 
+				"Welcome to FamilyFellowship.com!  We are excited for the opportunity to help you establish a more Family Friendly, Christ Centered Internet experience for your home or organization!\n\n".
+				"To ensure that you receive future communications from FamilyFellowship.com Customer Care, please add support@familyfellowship.com to your email program's address book, contact list or white list.\n\n".
+				"QUICK START GUIDE:\n\n".
+				"To view your website account details:\n".
+				"* Log in at http://familyfellowship.com/my_account\n".
+				"* Click on the \"View My Account Info\" link\n\n".
+				"To retrieve you FamilyFellowship.com Filter Password:\n".
+				"* Fill out the form at http://familyfellowship.com/my_account/profile_password_reset\n\n".
+				"To download the FamilyFellowship.com Filter:".
+				"* Login to the FamilyFellowship.com website as above\n".
+				"* Click on the click on the \"Download the Client\" link\n\n".
+				"To Access the Filter (after you have downloaded and installed it and rebooted your pc):\n".
+				"* Double click on the wheel icon in the lower right hand corner of your screen, next to the clock.\n\n".
+				"Please don't hesitate to contact us if you have any questions or concerns!\n\n".
+				"The FamilyFellowship.com Team\n".
+				"1-877-873-2300 Monday - Friday 8am - 5pm CST\n".
+				"http://familyfellowship.com/customer_care\n\n".
+				"After hours support available:\n".
+				"http://familyfellowship.com/customer_care";
+
+				$subject3 = "[FamilyFellowship.com New User] {$user->name} has just signed up";
+				$to3 = "nathan@ashleafmedia.com, admin@familyfellowship.com";
+				$body3 =
+				"A new user has signed up at FamilyFellowship.com!\n\n".
+				"His/her name is {$user->profile_first_name} {$user->profile_middle_name} {$user->profile_last_name}.\n\n".
+				"To see their information, make sure that your are logged into FamilyFellowship.com and then go to this page: http://familyfellowship.com/user/{$user->uid}";
+
+				$from = variable_get('site_mail', ini_get('sendmail_from'));
+
+				$mail_success = drupal_mail('sweeper_confirmation', $user->mail, $subject, $body,$from);
+				$mail2_success = drupal_mail('sweeper_confirmation',$user->mail, $subject2, $body2,$from);
+				$mail3_success = drupal_mail('sweeper_confirmation', $to3, $subject3, $body3, $from);
+			}
+			else {
+				_sweeper_set_sweeper_flag($status2,$user->uid);
+			}
+		}
+	} 
+	
+	/******************************Page Content******************************/
+	// If paid and account created
+	if(_sweeper_check_payment($user->uid))
+	{
+		if(_sweeper_check_sweeper($user->uid))
+		{
+			$content .= 
+			"<h3>Before you download</h3>\n".
+			"<p><strong>Please do the following before downloading and installing the Filter:</strong></p>\n".
+			"<ul style='list-style-type: circle;margin-left: 25px;'>\n".
+			'	<li>'.
+			'		Make sure that Cookies are enabled.  <span class="pop">The'.
+			'		Filter will not work if cookies are not enabled!</span>'.
+			'		<a href="#" id="showcookies">Click here for more info</a>'.
+			'	</li>'.
+			'	<li>'.
+			'		Make sure that you turn off any anti-virus programs'.
+			'		your computer is running <a href="#" id="showantivirus">Click here for more info</a>'.
+			'	</li>'.
+			"</ul>".
+			'<div class="antivirus">'.
+			'	<h3>Why Disable Anti-virus?</h3>'.
+			'	<p><a href="#" id="hideantivirus">Click here to hide</a></p>'.
+			'	<p>Anti-virus is made specifically to monitor your system and prevent changes to it. Normally, this is a good thing, but it can cause major problems when you install software. Why? Because when you install new software you are intentionally changing your system files!</p>'.
+			'	<p>Unfortunately, any issues with the new installation may not be immediately apparent. In fact, they may not show up until you try to use a specific feature of the new software that was affected by your anti-virus program. At that point it can be very hard to identify the exact source of the issues. Sometimes the only solution available is to uninstall and reinstall.</p>'.
+			'	<p>For this reason, it is generally best to disable your anti-virus software before an installation. After you finish installing BE SURE you enable your anti-virus software again.</p>'.
+			'	<ul>'.
+			'		<li>'.
+			'			To learn how to disable Norton Anti-Virus, <a target="_blank" href="http://service1.symantec.com/SUPPORT/nav.nsf/396b6ccde72d4a4d882569fc006071d4/84953e4d6ab65f54882565600074b968?OpenDocument">see this website</a>'.
+			'		</li>'.
+			'		<li>'.
+			'			For information on McAfee Anti-Virus, <a target="_blank" href="http://us.mcafee.com/root/support.asp">see this website</a>'.
+			'		</li>'.
+			'		<li>For all others, please refer to the documentation for your anti-virus software, or use the google search box below to search for documentation on your software:</p>'.
+			'	</ul>'.
+			'	
+			<div id="google_box">
+			<form id="searchbox_013293025179772892876:ybkew9uogpg" action="http://www.google.com/cse" target="_blank">
+				<input name="cx" value="013293025179772892876:ybkew9uogpg" type="hidden" />
+				<input name="cof" value="FORID:0" type="hidden" />
+				<input name="q" size="16" type="text" />
+				<input name="sa" value="Search" type="submit" />
+			</form>
+			<script src="http://www.google.com/coop/cse/brand?form=searchbox_013293025179772892876%3Aybkew9uogpg" type="text/javascript">
+			</script>
+			</div>'.
+			'</div>'.
+			'<div class="cookies">'.
+			'	<h3>Why do I need cookies enabled?</h3>'.
+			'	<p><a href="#" id="hidecookies">Click here to hide</a></p>'.
+			'	<p>FamilyFellowship.com, like most modern websites, uses cookies to track whether or not you are logged in.  With out cookies enabled, our servers have no way of knowing if you are logged in or not.  And if the server can not tell if you are logged in, it can not work.  FamilyFellowship.com does not store any other information in our cookies, so you can rest easy knowing that your privacy is safe.</p>'.
+			'	<ul>'.
+			'		<li>To see how to enable cookies on Internet Explorer, <a href="/ie_cookies">click here</a></li>'.
+			'		<li>To see how to enable cookies on FireFox, <a href="/firefox_cookies">click here</a></li>'.
+			'	</ul>'.
+			'</div>'.
+			"<p>".
+			"	Now you are ready to download and install the FamilyFellowship.com\n".
+			"	Internet Filter Profile Manager.  To do so, click on the link\n".
+			"	below. Thank you!\n".
+			"</p>\n".
+			"<div class=\"guarantee2\">";
+			
+			$content .= "<p><a href='http://".$_SERVER['SERVER_NAME']."/filteringconsole/FamilyFellowship.comFilteringConsole-3.4.42.exe'>Click Here To download the filter.</a></p>";
+			
+			$content .= "</div>";
+		} else { // If sweeper account is not created.
+			$content .= 
+			"<h3>There is a problem with your filter account</h3>".
+			"<p>We have recived your payment, however there was an error while creating your filter account.  Please contact <a href=\"/customer_care\">Customer Support</a> so that we can resolve this issue as quickly as posible.</p>".
+			"<p>We appoligize for any inconvinience.</p>";
+		}
+	} else { // If payment is not received
+		drupal_set_message("<div class=\"messages error\"><p class=\"notice\">We don't have record of your payment.  Please use the form below to make your payment. If you feel that our records are in error please contact <a href=\"http://".$_SERVER['SERVER_NAME']."/customer_care\" title=\"Customer Care Contact Page\">Customer Care</a>.  Thank you!</p></div>");
+		drupal_goto('confirmation');
+		// $content .= "<p>We don't have record of your payment.  <a href=\"https://".$_SERVER['SERVER_NAME']."/confirmation\" title=\"Confirmation/checkout page\">Click here to complete your payment</a>.  If you feel that our records are in error please contact <a href=\"http://".$_SERVER['SERVER_NAME']."/customer_care\" title=\"Customer Care Contact Page\">Customer Care</a>.  Thank you!</p>";
+	}
+
+	/******************************End Page Content******************************/
+	if($debug){
+
+		if($_POST){
+			$content .= "<br>Post Data:<br>";
+			$content .= "<table>";
+			foreach($_POST as $name => $items){
+				$content .= "<tr>";
+				$content .= "<th>".$name."</th><td>".$items."</td>";
+				$content .= "</tr>";
+			} // end foreach user attribute
+			$content .= "</table><br>";
+		} //end if Posted
+
+		$content .= "Payment test: ";
+		if(_sweeper_check_payment($user->uid)){
+			$content .= "True<br>";
+		} else {
+			$content .= "False<br>";
+		}
+		$content .= "Sweeper account test: ";
+		if(_sweeper_check_sweeper($user->uid)){
+			$content .= "True<br>";
+		} else {
+			$content .= "False<br>";
+		}
+		$content .= "<br>";
+
+
+		$results = db_query("select f.title,f.name,v.uid,v.value from profile_fields f, profile_values v where f.fid = v.fid and v.uid = ".$user->uid." ");
+		if($results){
+			$content .= "Profile Details (". db_num_rows($results)."):<br>";
+			$content .= "<table>";
+			while($item = db_fetch_array($results)){
+				$content .= "<tr>";
+				$content .= "<th>Row ".++$i."</th>";
+				$content .= "<td>".$item['name']."</td><td>".$item['title']."</td><td>".$item['uid']."</td><td>".$item['value']."</td>";
+				$content .= "</tr>";
+			} //end while db results
+			$content .= "</table>";
+		} // end if $results
+	} // end $debug
+	
+	if($debug){
+		$content .= "<br>User Information:<br>";
+		$content .= "<table>";
+		foreach($user as $name => $items){
+			$content .= "<tr>";
+			$content .= "<th>".$name."</th><td>".$items."</td>";
+			$content .= "</tr>";
+		} // end foreach user attribute
+		$content .= "</table>";
+	} // end if debug
+	$content .= "
+
+	<p><a href=\"/my_account\">Back to My Account Page</a></p>
+";
+	return $content;
+}
+
+function sweeper_change_card()
+{
+	global $user;
+	$debug = false;
+	
+	include ("data.php");
+	include ("authnetfunction.php");
+	
+	// Load user data if it's not there
+	$user = user_load(array("name" => $user->name));
+	
+	$content = "";
+	
+	if (empty($_POST)) 
+	{
+		$content .=
+		"<p>".
+		"	Use this form to change the Credit Card you would like for us to bill when renewing your subscription.".
+		"</p>".
+		"<form method=\"post\" action=\"/change_card\">".
+		"	<input type=\"hidden\" value=\"{$user->profile_subscription_id}\" name=\"profile_subscription_id\" />".
+		"	<p><label for=\"cardNumber\">New Credit Card Number</label>".
+		"	<input type=\"text\" name=\"cardNumber\" id=\"cardNumber\" value=\"\" /></p>".
+		"	<p><label for=\"expirationDate\">New Credit Card Expiration</label>".
+	//	'				<input type="text" name="expirationDay" id="expirationDay" value="DD" size="2" maxlenght="2" />&ndash;<input type="text" name="expirationYear" id="expirationYear" value="YYYY" size="4" maxlength="4" />'.
+		"				<select name=\"expirationDay\" id=\"expirationDay\">".
+		"					<option>01</option>".
+		"					<option>02</option>".
+		"					<option>03</option>".
+		"					<option>04</option>".
+		"					<option>05</option>".
+		"					<option>06</option>".
+		"					<option>07</option>".
+		"					<option>08</option>".
+		"					<option>09</option>".
+		"					<option>10</option>".
+		"					<option>11</option>".
+		"					<option>12</option>".
+		"				</select>/<select name=\"expirationYear\" id=\"expirationYear\">".
+		"					<option>2007</option>".
+		"					<option>2008</option>".
+		"					<option>2009</option>".
+		"					<option>2010</option>".
+		"					<option>2011</option>".
+		"					<option>2012</option>".
+		"					<option>2013</option>".
+		"					<option>2014</option>".
+		"					<option>2015</option>".
+		"					<option>2016</option>".
+		"					<option>2017</option>".
+		"				</select>".
+		"	<input type=\"submit\" value=\"Change My Credit Card\" />".
+		"</form>";
+	} 
+	else 
+	{
+		
+		//Define variables to send
+		$subscriptionId = $user->profile_subscription_id;
+		$refId = "YourReferenceID";
+		$cardNumber = $_POST['cardNumber'];//"5424000000000015";
+		$expirationDate = $_POST['expirationYear']."-".$_POST['expirationDay'];
+		if (isset($user->profile_first_name)) {
+			$firstName = $user->profile_first_name;
+			$lastName = $user->profile_last_name;
+		} else {
+			$name_array = explode(" ", $user->profile_full_name);
+			$firstName = $name_array[0];
+			$lastName = $name_array[0];
+		}
+
+		//Build XML to post
+		$post_xml =
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>".
+        "<ARBUpdateSubscriptionRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\">".
+        "	<merchantAuthentication>".
+        "		<name>" . $loginname . "</name>".
+        "		<transactionKey>" . $transactionkey . "</transactionKey>".
+        "	</merchantAuthentication>".
+        "	<refId>" . $refId . "</refId>".
+        "	<subscriptionId>" . $subscriptionId . "</subscriptionId>".
+        "	<subscription>".
+        "		<payment>".
+        "			<creditCard>".
+        "				<cardNumber>" . $cardNumber ."</cardNumber>".
+        "				<expirationDate>" . $expirationDate . "</expirationDate>".
+        "			</creditCard>".
+        "		</payment>".
+        "	</subscription>".
+        "</ARBUpdateSubscriptionRequest>";
+
+		//Send the XML via curl
+		$response = send_request_via_curl($host,$path,$post_xml);
+
+		//If the connection and send worked $response holds the return from Authorize.Net
+		if ($response)
+		{
+			/*
+				parse_return is a function that shows how you can parse though the XML return if these other options are not avilable to      you.
+			*/
+			list ($refId, $resultCode, $code, $text, $subscriptionId) = parse_return($response);
+			
+			if ($text == "Successful.") {
+				$content .=
+				"<h3>Success</h3>".
+				"<p>You credit card number was successfully changed.  From now on we will charge the new credit card.  Thank you!</p>";
+				_sweeper_set_role('active', $user->uid, array('canceled', 'delinquent'));
+				$content .= 
+				"	".
+				"<p><a href=\"http://".$_SERVER['SERVER_NAME']."/my_account\">Back to My Account Page</a></p>".
+				"	";
+			} else {
+				$content .=
+				"<h3>We're sorry...</h3>".
+				"<p>".
+				"	We encountered an error when we tried to process your creddit card change request.  The request returned the following error:".
+				"</p>".
+				"<p class=\"messages error\">".
+				"	$text".
+				"</p>".
+				"<p>".
+				"	<a href=\"/change_card\">Click here to try again.</a>".
+				"</p>";
+			}
+
+		}
+		else
+		{
+			$content .= "send failed <br>";
+		}
+	}
+	
+	$content .= 
+	"	".
+	"	<p><a href=\"http://".$_SERVER['SERVER_NAME']."/my_account\">Back to My Account Page</a></p>".
+	"	";
+	
+	return $content;
+}
+
+function sweeper_profile_manager_info()
+{
+	global $user;
+	$debug = false;
+
+	// Load user data if it's not there
+	$user = user_load(array("name" => $user->name));
+	$content = "";
+	$username = null;
+	$password = null;
+	$question = null;
+	$answer = null;
+	$synch = null;
+	
+	if (!empty($_POST)) 
+	{
+		//setup the values to be used for the invalidated form:
+		$username = $_POST["profile_sweeper_username"];
+		$password = $_POST['profile_sweeper_password'];
+		$question = $_POST['profile_security_q'];
+		$answer = $_POST['profile_security_a'];
+		$synch = $_POST['profile_syncronize_passwords'];
+		
+		// validate the values
+		// validation code will go here
+		if ($_POST['profile_syncronize_passwords']) {
+			$_POST['profile_sweeper_username'] = $user->name;
+			$_POST['profile_sweeper_password'] = $user->pass;
+		}
+		$name_error = sweeper_validate_name($_POST['profile_sweeper_username']);
+		//echo $_POST['profile_sweeper_username'].'<br />'.$_POST['profile_sweeper_password'];
+		$pass_error = sweeper_validate_pass($_POST['profile_sweeper_password']);
+		//echo "<pre>".print_r($error)."</pre>";
+		if (empty($_POST['profile_security_q'])) {
+			$q_error = "You must enter a Security Question.";
+		}
+		else {
+			$q_error = null;
+		}
+		if (empty($_POST['profile_security_a'])) {
+			$a_error = "You must enter a Security Answer.";
+		}
+		else {
+			$a_error = null;
+		}
+		if(!$name_error && !$pass_error && !$q_error && !$a_error)
+		{
+
+			if (set_sweeper_and_security_values($_POST, $user->uid)) {
+				#drupal_goto("/confirmation");
+				if ($_SERVER['SERVER_NAME'] == 'localhost') {
+					drupal_goto("/confirmation");
+				}
+				else {
+					drupal_goto("https://".$_SERVER['SERVER_NAME']."/confirmation");
+				}
+				
+			}
+			else {
+				$system_error = "There was an error with your submission.  Please contact <a href=\"/customer_care\">Customer Care.</a>  Please be sure to include your name, email address, phone numer and the best time to contact you.";
+			}
+		}
+		else 
+		{	
+			$error_mess = "";
+			if(isset($system_error)) $error_mess .= "<li>$system_error</li>";
+			if(isset($name_error)) $error_mess .= "<li>$name_error</li>";
+			if(isset($pass_error)) $error_mess .= "<li>$pass_error</li>";
+			if(isset($q_error)) $error_mess .= "<li>$q_error</li>";
+			if(isset($a_error)) $error_mess .= "<li>$a_error</li>";
+			$content .= 
+			"<div class=\"messages error\">".
+			"	There were errors in your submission:".
+			"	<ul>".
+			"		$error_mess".
+			"	</ul>".
+			"	Please correct these errors!".
+			"</div>";
+		}
+		
+	} 
+	if(empty($_POST) || $error_mess)
+	{
+		
+		$content .=
+		"<form action=\"/sweeper/signup\" method=\"post\">".
+		"<div class=\"description2\">".
+		"<h3>Didn't I just create a username and password?</h3>".
+		"<p>".
+		"	In this section of the login process, you will setup another Username and Password combination. This set will be specifically for your FamilyFellowship.com Filter Admin Account. This Username and Password will be used to Log into your Filter's Profile Manager.".
+		"</p>".
+		"<p>".
+		"	The Filter Profile Manager is the part of the FamilyFellowship.com Filter System that you will actually download and install on your computer. It allows you to administer every aspect of your filter.".
+		"</p>".
+		"<h3>All right, why two sets of usernames and passwords?</h3>".
+		"<p>".
+		"	Typically we keep the login information for your account on our website separate from your Filter admin account as an added layer of security. However, we can synchronize the two sets of usernames and passwords, as a convenience to you.".
+		"</p>".
+		"<p><a id=\"hideDescription\" href=\#\">Click here to hide this description</a></p>".
+		"</div>".
+		"<p>".
+		"	Would you like to have your FamilyFellowship.com Filter Admin Username and Password synchronized with your FamilyFellowship.com My Account Username and Password? For more information <a href=\"#\" id=\"showDescription\">click here.</a>".
+		"</p>".
+		"<p><input type=\"checkbox\" name=\"profile_syncronize_passwords\" id=\"profile_syncronize_passwords\" value=\"1\" /> <strong><label for=\"profile_syncronize_passwords\">Synchronize my usernames and passwords.</label></strong></p>".
+		"<fieldset class=\"hidder\">".
+		"<legend>Filter Login Info</legend>".
+		"	<p>".
+		"		The following username and password are <em>extremely".
+		"		important</em>!  Make sure that you keep it confidential, and that".
+		"		you don't lose it.  Without this information you will not be able".
+		"		to administer, or even uninstall the Filter.".
+		"	</p>".
+		"	<legend for=\"profile_sweeper_username\">Filter User Name:</legend><br />".
+		"	<p><strong>The Filter User Name must be alpha-numeric (a-z, 0-9).  No punctuation other than -, _ and . are allowed.  It must be between 8 and 20 characters long.</strong></p>".
+		"	<input type=\"text\" name=\"profile_sweeper_username\" id=\"profile_sweeper_username\" value=\"{$username}\" /><br />".
+		"	<legend for=\"profile_sweeper_password\">Filter Password:</legend><br />".
+		"	<p><strong>The Filter Password must be alpha-numeric (a-z, 0-9). No punctuation other than -, _ and . are allowed.  It must be between 5 and 8 characters.</strong></p>".
+		"	<input type=\"password\" name=\"profile_sweeper_password\" id=\"profile_sweeper_password\" value=\"{$password}\" />".
+		"</fieldset>".
+		"<fieldset>".
+		"<legend>Security Question and Answer</legend>".
+		"	<p>".
+		"		The Security Question and Answer are also extremely important.".
+		"		Some examples of times you will need to use your".
+		"		Security Question and Answer are:".
+		"	</p>".
+		"	<ul>".
+		"		<li>To retrieve your Filter Pass word , if you forget it</li>".
+		"		<li>To cancel your account with FamilyFellowship.com</li>".
+		"	</ul>".
+		"	<div class=\"message error\">".
+		"	<p>".
+		"		Make sure that you will be able to remember the".
+		"		exact question and the exact answer your enter here, as you will".
+		"		have to enter them exactly!".
+		"	</p>".
+		"	</div>".
+		"	<label for=\"profile_security_q\">Security Question:</label><br />".
+		"	<select name=\"profile_security_q\" id=\"profile_security_q\">";
+		
+		$content .= get_sweeper_question_array($question);
+		
+		$content .=
+		"	</select><br />".
+		"	<label for=\"profile_security_a\">Security Answer:</label><br />".
+		"	<input type=\"text\" name=\"profile_security_a\" id=\"profile_security_a\" value=\"{$answer}\" />".
+		"</fieldset>".
+		"<input type=\"submit\" value=\"Setup my Account!\" />".
+		"</form>";
+	}
+	
+	
+	return $content;
+}
+
+function set_sweeper_and_security_values($values, $uid)
+{
+	if (_sweeper_set_sweeper_username($values['profile_sweeper_username'], $uid) && 
+		_sweeper_set_sweeper_password($values['profile_sweeper_password'], $uid) && 
+		_sweeper_set_security_q($values['profile_security_q'], $uid) && 
+		_sweeper_set_security_a($values['profile_security_a'], $uid) && 
+		_sweeper_set_sync_flag($values['profile_syncronize_passwords'], $uid) &&
+		_sweeper_set_value('profile_aid', $_SESSION['AID'], $uid))
+	{
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function get_sweeper_question_array($default = null, $user_id = null)
+{
+	$question_array = array(
+		'1'=>"What is your favorite color",
+		'2'=>"What is your pet's name",
+		'3'=>"What is your favorite city",
+		'4'=>"What is your spouse’s name",
+		'5'=>"What is the name of your church",
+		'6'=>"What is your favorite scripture",
+		'7'=>"What is Your pastor's name",
+	);
+	
+	if ($user_id) {
+		$user = user_load(array("uid" => $user_id));
+		if (!in_array($user->profile_security_q, $question_array)) {
+			$question_array[] = $user->profile_security_q;
+		}
+	}	
+	$options = "";
+	foreach ($question_array as $key => $value) {
+		if ($default == $value) { $selected = 'selected="selected"'; } 
+		else { $selected = ''; }
+		$options .= '<option value="'.$value.'" '.$selected.'>'.$value.'</option>';
+	}
+	return $options;
+}
+
+function sweeper_change_plan()
+{
+	global $user;
+	$debug = false;
+
+	// Load user data if it's not there
+	$user = user_load(array("name" => $user->name));
+
+	include ("data.php");
+	include ("authnetfunction.php");
+
+	$content = "";
+	if(empty($_POST))
+	{
+		$content .= 
+		"<p>Your Current plan is {$user->profile_current_plan}</p>".
+		"<p>If you would like to change your plan, please use the form below:</p>";
+	
+		$subscription = _sweeper_derive_plan($user->profile_current_plan);
+		if (isset($user->profile_first_name)) {
+			$fname = $user->profile_first_name;
+			$lname = $user->profile_last_name;
+		} else {
+			$name_array = explode(" ", $user->profile_full_name);
+			$fname = $name_array[0];
+			$lname = $name_array[0];
+		}
+	
+		$content .= 
+		'<form method="post" action="/change_plan">
+		<table>
+			<tr>
+				<td for="subscription">New plan</td>
+				<td>
+					<select name="subscription" id="subscription">
+						<option value="1">Month-to-Month -- $5.95</option>
+						<option value="2">Quarterly -- $15.95</option>
+						<option value="3">Semi-Annual -- $27.95</option>
+						<option value="4">Annual -- $49.95</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td><label for="fname">Fist Name</label></td>
+				<td><input type="text" name="firstName" id="fname" value="'.$fname.'" /></td>
+			</tr><tr>
+				<td><label for="lname">Last Name</label></td>
+				<td><input type="text" name="lastName" id="lname" value="'.$lname.'" /></td>
+			</tr><tr>
+				<td><label for="email">Email</label></td>
+				<td><input type="text" name="email" id="email" value="'.$user->mail.'" /></td>
+			</tr><tr>
+				<td><label for="address">Address</label></td>
+				<td><input type="text" name="address" id="address" value="'.$user->profile_street_address.'" /></td>
+			</tr><tr>
+				<td><label for="city">City</label></td>
+				<td><input type="text" name="city" id="city" value="'.$user->profile_city.'" /></td>
+			</tr><tr>
+				<td><label for="state">State/Province</label></td>
+				<td><input type="text" name="state" id="state" value="'.$user->profile_state_province.'" /></td>
+			</tr><tr>
+				<td><label for="zip">Zip/Postal Code</label></td>
+				<td><input type="text" name="zip" id="zip" value="'.$user->profile_zip_code.'" /></td>
+			</tr><tr>
+				<td><p><label for="cardNumber">Credit Card Number</label></p></td>
+				<td><input type="text" name="cardNumber" id="cardNumber" value="" /></td>
+			</tr><tr>
+				<td><p><label for="expirationDate">Credit Card Expiration</label></p></td>
+				<td>'.
+				
+			//	'				<input type="text" name="expirationDay" id="expirationDay" value="DD" size="2" maxlenght="2" />&ndash;<input type="text" name="expirationYear" id="expirationYear" value="YYYY" size="4" maxlength="4" />'.
+				"				<select name=\"expirationDay\" id=\"expirationDay\">".
+				"					<option>01</option>".
+				"					<option>02</option>".
+				"					<option>03</option>".
+				"					<option>04</option>".
+				"					<option>05</option>".
+				"					<option>06</option>".
+				"					<option>07</option>".
+				"					<option>08</option>".
+				"					<option>09</option>".
+				"					<option>10</option>".
+				"					<option>11</option>".
+				"					<option>12</option>".
+				"				</select>/<select name=\"expirationYear\" id=\"expirationYear\">".
+				"					<option>2007</option>".
+				"					<option>2008</option>".
+				"					<option>2009</option>".
+				"					<option>2010</option>".
+				"					<option>2011</option>".
+				"					<option>2012</option>".
+				"					<option>2013</option>".
+				"					<option>2014</option>".
+				"					<option>2015</option>".
+				"					<option>2016</option>".
+				"					<option>2017</option>".
+				"				</select>".
+'				</td>
+			</tr><tr>
+				<td colspan="2">
+					<input type="submit" name="submit" value="Subscribe!" />
+				</td>
+			</tr>
+		</table>	
+		</form>';
+	} 
+	else 
+	{
+		// Cancel the current account.  I've given up doing this at all right.
+		// Just hack it to pieces and tape it together again :'(
+		// list($cancel_billing_result, $cancel_refId, $cancel_resultCode, $cancel_code, $cancel_text, $cancel_subscriptionId ) = _sweeper_cancel_billing($user->name);
+		
+		$subscriptionId = intval($user->profile_subscription_id);
+
+		$refId = $user->uid;
+
+		//Build XML to post
+		$post_xml =
+		        "<?xml version=\"1.0\" encoding=\"utf-8\"?>".
+		        "<ARBCancelSubscriptionRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\">".
+		        "	<merchantAuthentication>".
+		        "		<name>" . $loginname . "</name>".
+		        "		<transactionKey>" . $transactionkey . "</transactionKey>".
+		        "	</merchantAuthentication>" .
+		        "	<refId>" . $refId . "</refId>".
+		        "	<subscriptionId>" . $subscriptionId . "</subscriptionId>".
+		        "</ARBCancelSubscriptionRequest>";
+
+		//Send the XML via curl
+		$response = send_request_via_curl($host,$path,$post_xml);
+		
+		//If the connection and send worked $response holds the return from Authorize.Net
+		if ($response)
+		{
+		   /**
+		   	* parse_return is a function that shows how you can parse though the XML return if these other options are not available to you.
+		   **/
+		   list ($cancel_refId, $cancel_resultCode, $cancel_code, $cancel_text, $cancel_subscriptionId) =parse_return($response);
+
+			if($cancel_text == "Successful." || $cancel_text == "The subscription has already been canceled."){
+				//watchdog('user', t('Billing has been cancelled for '.$user.'.'));
+				$cancel_billing_result = true;
+				_sweeper_set_payment_flag(false,$user->uid);
+				_sweeper_set_subscription_level('Month-to-month',$user->uid);
+				$result = db_query("select fid from profile_fields where name = 'profile_current_plan'");
+				$field_data = db_fetch_array($result);
+				db_query("DELETE FROM profile_values WHERE fid = %d AND uid = %d", $field_data['fid'], $user->uid);
+			} else {
+				// uhoh, it didn't work...			
+				//watchdog('user', t('Billing has not been cancelled for '.$user.'.'));
+				$cancel_billing_result = false;
+			}
+
+		}
+		else
+		{
+			// the send failed!
+			return array(false, null,null,null,"send failed", $subscriptionId);
+		}
+		$content .=
+		"<table>".
+		"	<tr>".
+		"		<td>Result:</td><td>{$cancel_billing_result}</td>".
+		"	</tr><tr>".
+		"		<td>RefId:</td><td>{$cancel_refId}</td>".
+		"	</tr><tr>".
+		"		<td>ResultCode:</td><td>{$cancel_resultCode}</td>".
+		"	</tr><tr>".
+		"		<td>Code</td><td>{$cancel_code}</td>".
+		"	</tr><tr>".
+		"		<td>Text</td><td>{$cancel_text}</td>".
+		"	</tr><tr>".
+		"		<td>SubscriptionID</td><td>{$cancel_subscriptionId}</td>".
+		"	</tr>".
+		"</table>";
+		if($cancel_text == "Successful." || $cancel_text == "The subscription has already been canceled.")
+		{
+
+			//Define variables to send
+
+			$firstName = $_POST[firstName];
+			$lastName = $_POST[lastName];
+			$cardNumber = $_POST[cardNumber];
+			$expirationDate = $_POST[expirationYear] . '-' . $_POST[expirationDay];
+			$email = $_POST[email];
+			list($unit, $length, $totalOccurrences, $amount, $subscriptionName) = _sweeper_derive_plan2($_POST['subscription']);
+
+			$subscriptionId = "111" ;
+			$refId = "YourReferenceID";
+			$name = "fdsfsd";
+			$startDate = date("Y-m-d");
+
+			//Build XML to post
+			$post_xml =
+			"<?xml version=\"1.0\" encoding=\"utf-8\"?>" .
+			"<ARBCreateSubscriptionRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\">" .
+			"	<merchantAuthentication>".
+			"		<name>" . $loginname . "</name>".
+			"		<transactionKey>" . $transactionkey . "</transactionKey>".
+			"	</merchantAuthentication>".
+			"	<refId>". $refId ."</refId>".
+			"	<subscription>".
+			"		<name>". $subscriptionName ."</name>".
+			"		<paymentSchedule>".
+			"			<interval>".
+			"				<length>". $length ."</length>".
+			"				<unit>". $unit ."</unit>".
+			"			</interval>".
+			"			<startDate>" . $startDate . "</startDate>".
+			"			<totalOccurrences>". $totalOccurrences . "</totalOccurrences>".
+			"		</paymentSchedule>".
+			"		<amount>". $amount ."</amount>".
+			"		<payment>".
+			"			<creditCard>".
+			"				<cardNumber>" . $cardNumber . "</cardNumber>".
+			"				<expirationDate>" . $expirationDate . "</expirationDate>".
+			"			</creditCard>".
+			"		</payment>".
+			"		<customer>".
+			"			<email>".$email."</email>".
+			"		</customer>".
+			"		<billTo>".
+			"			<firstName>". $firstName . "</firstName>".
+			"			<lastName>" . $lastName . "</lastName>".
+			"		</billTo>".
+			"	</subscription>".
+			"</ARBCreateSubscriptionRequest>";
+			
+			//Send the XML via curl
+			$response = send_request_via_curl($host,$path,$post_xml);
+
+			//If the connection and send worked $response holds the return from Authorize.Net
+			if ($response)
+			{
+				/*
+				parse_return is a function that shows how you can parse though the XML return if these other options are not avilable to      you.
+				*/
+				list ($refId, $resultCode, $code, $text, $subscriptionId) =parse_return($response);
+
+				// Validate user payment
+				if ($text == "Successful.") 
+				{
+					_sweeper_set_payment_flag(true,$user->uid);
+					_sweeper_set_subscription_id($subscriptionId,$user->uid);
+					_sweeper_set_sweeper_flag(true,$user->uid);
+					if(_sweeper_set_subscription_level($subscriptionName,$user->uid)){
+						drupal_goto('/sweeper');
+					} else {
+						die("We are not setting the new Subscription Level Correctly");
+					}
+					watchdog('user', t('Payment received for '.$user->name.'.'));
+				} else {
+					_sweeper_set_payment_flag(false,$user->uid);
+					_sweeper_set_sweeper_flag(false,$user->uid);
+					watchdog('user', t('Payment request returned the following error: '.$text.'.'));
+
+					$content .= "<h3>We apologize for the inconvinience...</h3>".
+					"<p>But the following error was returned during the processing of your credit card information:</p>".
+					"<p>$text</p>";
+
+					$content .=
+					"<h3>Please resubmit your Credit Card Billing information</h3>";
+
+					//$subscription = _sweeper_derive_plan();
+					if (isset($user->profile_first_name)) {
+						$fname = $user->profile_first_name;
+						$lname = $user->profile_last_name;
+					} else {
+						$name_array = explode(" ", $user->profile_full_name);
+						$fname = $name_array[0];
+						$lname = $name_array[0];
+					}
+					$content .= 
+					'<form method="post" action="/payment">
+					<table>
+						<tr>
+							<td><label for="fname">Fist Name</label></td>
+							<td><input type="text" name="firstName" id="fname" value="'.$fname.'" /></td>
+						</tr><tr>
+							<td><label for="lname">Last Name</label></td>
+							<td><input type="text" name="lastName" id="lname" value="'.$lname.'" /></td>
+						</tr><tr>
+							<td><label for="email">Email</label></td>
+							<td><input type="text" name="email" id="email" value="'.$user->mail.'" /></td>
+						</tr><tr>
+							<td><label for="address">Address</label></td>
+							<td><input type="text" name="address" id="address" value="'.$user->profile_street_address.'" /></td>
+						</tr><tr>
+							<td><label for="city">City</label></td>
+							<td><input type="text" name="city" id="city" value="'.$user->profile_city.'" /></td>
+						</tr><tr>
+							<td><label for="state">State/Province</label></td>
+							<td><input type="text" name="state" id="state" value="'.$user->profile_state_province.'" /></td>
+						</tr><tr>
+							<td><label for="zip">Zip/Postal Code</label></td>
+							<td><input type="text" name="zip" id="zip" value="'.$user->profile_zip_code.'" /></td>
+						</tr><tr>
+							<td><p><label for="cardNumber">Credit Card Number</label></p></td>
+							<td><input type="text" name="cardNumber" id="cardNumber" value="" /></td>
+						</tr><tr>
+							<td><p><label for="expirationDate">Credit Card Expiration</label></p></td>
+							<td>'.
+						//	'				<input type="text" name="expirationDay" id="expirationDay" value="DD" size="2" maxlenght="2" />&ndash;<input type="text" name="expirationYear" id="expirationYear" value="YYYY" size="4" maxlength="4" />'.
+							"				<select name=\"expirationDay\" id=\"expirationDay\">".
+							"					<option>01</option>".
+							"					<option>02</option>".
+							"					<option>03</option>".
+							"					<option>04</option>".
+							"					<option>05</option>".
+							"					<option>06</option>".
+							"					<option>07</option>".
+							"					<option>08</option>".
+							"					<option>09</option>".
+							"					<option>10</option>".
+							"					<option>11</option>".
+							"					<option>12</option>".
+							"				</select>/<select name=\"expirationYear\" id=\"expirationYear\">".
+							"					<option>2007</option>".
+							"					<option>2008</option>".
+							"					<option>2009</option>".
+							"					<option>2010</option>".
+							"					<option>2011</option>".
+							"					<option>2012</option>".
+							"					<option>2013</option>".
+							"					<option>2014</option>".
+							"					<option>2015</option>".
+							"					<option>2016</option>".
+							"					<option>2017</option>".
+							"				</select>".
+'							</td>
+						</tr><tr>
+							<td colspan="2">
+								<input type="hidden" name="subscription" value="'.$_POST['subscription'].'" />
+								<input type="submit" name="submit" value="Subscribe!" />
+							</td>
+						</tr>
+					</table>	
+					</form>';
+				}
+
+			}
+			else
+			{
+				$content .= "send failed <br>";
+			}
+		}
+		else 
+		{
+			$content .= "<h3>We were unable to cancel your previouse subscription...</h3>";
+		}
+		
+	}	
+	$content .=
+	"
+
+		<p><a href=\"/my_account\">Back to My Account Page</a></p>
+";
+	return $content;
+}
+
+/**
+ * Checks to see if the user has paid for their account.
+ * $uid The uid of the user that we are checking the payment status for
+ * returns true if paid, false for incomplete or no data
+**/
+function _sweeper_check_payment($userid) 
+{
+	$results = db_query("select v.value from profile_fields f, profile_values v where f.name = 'profile_payment' and f.fid = v.fid and v.uid = ".$userid." ");
+	if($results){
+		$item = db_fetch_array($results);
+		if($item['value'] == 1){
+			$paid = true;
+		} else {
+			$paid = false;
+		}
+	} else { // end if $results
+		$paid = false;
+	}
+	return $paid;
+}
+
+/**
+ * Sets the flag that indicates the user has paid for their account.
+ * $status boolean whether payment has been processed
+ * returns true if operation successful, false on an error
+**/
+function _sweeper_set_payment_flag($status,$user_id) 
+{
+	if($status){
+		$status = "1";
+	} else {
+		$status = "0";
+	}
+	
+	$result = db_query("select fid from profile_fields where name = 'profile_payment'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $status);
+	$result = true;
+	return $result;
+}
+
+function _sweeper_set_sync_flag($status,$user_id) 
+{
+	if($status){
+		$status = "1";
+	} else {
+		$status = "0";
+	}
+	
+	$result = db_query("select fid from profile_fields where name = 'profile_syncronize_passwords'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $status);
+	$result = true;
+	return $result;
+}
+
+/**
+ * Sets the subscription id for the user in question
+**/
+function _sweeper_set_subscription_id($subscriptionId, $user_id)
+{
+	$result = db_query("select fid from profile_fields where name = 'profile_subscription_id'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $subscriptionId);
+	$result = true;
+	return $result;
+}
+
+function _sweeper_set_sweeper_username($sweeperUsername, $user_id)
+{
+	$result = db_query("select fid from profile_fields where name = 'profile_sweeper_username'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $sweeperUsername);
+	$result = true;
+	return $result;
+}
+
+function _sweeper_set_sweeper_password($sweeperPassword, $user_id)
+{
+	$result = db_query("select fid from profile_fields where name = 'profile_sweeper_password'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $sweeperPassword);
+	$result = true;
+	return $result;
+}
+
+function _sweeper_set_security_q($securityQ, $user_id)
+{
+	$result = db_query("select fid from profile_fields where name = 'profile_security_q'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $securityQ);
+	$result = true;
+	return $result;
+}
+
+function _sweeper_set_security_a($securityA, $user_id)
+{
+	$result = db_query("select fid from profile_fields where name = 'profile_security_a'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $securityA);
+	$result = true;
+	return $result;
+}
+
+function _sweeper_set_value($field, $value, $user_id)
+{
+	
+	$result = mysql_query("select fid from profile_fields where name = '$field'");
+	if($field_data = mysql_fetch_array($result))
+	{
+		if (db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id)) {
+			if (db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $value)) {
+				$result = true;
+			} else {
+				die("The MySQL Server reported and error: ".mysql_error()." Or maybe we just don't like db_query 2"); //$result = false;
+			} 
+		} else {	
+			die("The MySQL Server reported and error: ".mysql_error()." Or maybe we just don't like db_query 1");//$result = false;
+		}
+	} 
+	
+	return $result;
+}
+
+function _sweeper_set_role($role, $user_id, $rem_role = null)
+{
+	
+	if ($rem_role != null and !is_array($rem_role)) {
+		// $rem_result = mysql_query("select rid from role where name = '$rem_role'");
+		$field_rem_data = mysql_query($rem_result);
+		mysql_query("DELETE FROM users_roles WHERE uid = $user_id") or die("The MySQL Server reported an error: ". mysql_error());
+	}
+	elseif (is_array($rem_role)) {
+		foreach ($rem_role as $row => $value) {
+			$result = mysql_query("select rid from role where name = '$value'");
+			$row = mysql_fetch_array($result, MYSQL_ASSOC);
+			mysql_query("DELETE FROM users_roles WHERE uid = $user_id AND rid = {$row['rid']} LIMIT 1") or die("The MySQL Server reported and error: ". mysql_error());
+		}
+	}
+	$result = mysql_query("select rid from role where name = '$role'") or die("The MySQL Server reported the following error: ". mysql_error());
+	if($field_data = mysql_fetch_array($result))
+	{
+		$query1 = "INSERT INTO users_roles (rid, uid) VALUES ({$field_data['rid']}, $user_id)";
+		if (mysql_query($query1)) {
+			$result = true;
+		} else {
+			die("The MySQL Server reported and error: ".mysql_error()); //$result = false;
+		} 
+	} else {
+		die("The MySQL Server reported and error: ".mysql_error()." Or maybe we just don't like db_fetch_array in \"_sweeper_set_role\"");//$result = false;
+	}
+	return $result;
+}
+
+/**
+ * Checks to see if the users sweeper account has been created.
+ * $userid is the $user->uid of the person that will be checked
+ * returns true if created, false if not created
+**/
+function _sweeper_check_sweeper($userid) 
+{
+	$results = db_query("select v.value from profile_fields f, profile_values v where f.name = 'profile_sweeper' and f.fid = v.fid and v.uid = ".$userid." ");
+	if($results){
+		$item = db_fetch_array($results);
+		if($item['value'] == 1){
+			$setup = true;
+		} else {
+			$setup = false;
+		}
+	} else { // end if $results
+		$setup = false;
+	}
+	return $setup;
+}
+
+/**
+ * Sets the flag that indicates the users sweeper account has been created.
+ * returns true if operation successful, false on an error
+**/
+function _sweeper_set_sweeper_flag($status,$user_id) 
+{
+	if($status){
+		$status = "1";
+	} else {
+		$status = "0";
+	}
+		
+	$result = db_query("select fid from profile_fields where name = 'profile_sweeper'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $status);
+	$results = true;
+	return $result;
+}
+
+/**
+ * Sets the flag that indicates the users refund is needed.
+ * returns true if operation successful, false on an error
+**/
+function _sweeper_set_refund_flag($status,$user_id) 
+{
+	if($status){
+		$status = "1";
+	} else {
+		$status = "0";
+	}
+		
+	$result = db_query("select fid from profile_fields where name = 'profile_30_refund_needed'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $status);
+	$results = true;
+	return $result;
+}
+
+/**
+ * Sets the subscription level
+**/
+function _sweeper_set_subscription_level($subscription,$user_id) 
+{
+		
+	$result = db_query("select fid from profile_fields where name = 'profile_current_plan'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM profile_values WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO profile_values (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $subscription);
+	$results = true;
+	return $result;
+}
+
+/**
+ * Account Cancellation page.
+**/
+function sweeper_cancel() 
+{
+	global $user;
+	// load up the user var
+	$user = user_load(array("name" => $user->name));
+	//$debug variable is used to easily turn off debugging code and output
+	$username = null;
+	$password = null;
+	$question = null;
+	$answer = null;
+	$uninstalled = null;
+	
+	$debug = false;
+	$error = null;
+	if($_POST) 
+	{ // credentials are posted
+		$username = $_POST['username'];
+		$password = $_POST['password'];
+		$question = $_POST['profile_security_q'];
+		$answer = $_POST['security_answer'];
+
+		if($debug){ $content .= "UID: ".$user->uid."<br>
+			Username: ".$_POST['username']."<br>
+			Username: ".$user->name."<br>
+			Password: ".$_POST['password']."<br>
+			Password: ".$user->pass."<br>";
+		} // End debug
+
+		if ($_POST['uninstalled'] != 'on') {
+			$error .= "<li>You must uninstall the Filter Profile Manager before you cancel you account.  Please uninstall it, then check the box below to indicate that you have done so.</li>";			
+		}
+		else {
+			$uninstalled = "checked";
+		}
+		// Validate the credentials
+		if( $user->name == $_POST['username'] && $user->pass == $_POST['password'] && $user->profile_security_q == $_POST['profile_security_q'] && $user->profile_security_a == $_POST['security_answer']) 
+		{ 
+			
+			// Terminate Account
+			list($billing_result, $refId, $resultCode, $code, $text, $subscriptionId ) = _sweeper_cancel_billing($user->name);
+			if($billing_result){ //Terminate Billing	
+				$content .= "<p>Your Billing account has been cancelled.</p>";
+				$billing_cancelled = true;
+				_sweeper_set_value('profile_payment', false, $user->uid);
+			} else {
+				watchdog('content', t('There was a problem ending billing for '.$user->name.'.'), WATCHDOG_ERROR);
+				$error .= 
+				"<li>There was a problem removing your account, please contact <a href='/node/7'>Customer Support</a>".
+				"The issue apears to be: {$text}<br />".
+				"The subscription id is {$subscriptionId}</li>";
+				$billing_cancelled = false;
+			}
+			if(_sweeper_cancel_sweeper($user->profile_sweeper_username)){ //Terminate Filter Account	
+				$content .= "<p>Your Filter account has been cancelled.</p>";
+				$sweeper_cancelled = true;
+				_sweeper_set_value('profile_sweeper', false, $user->uid);
+			} else {
+				watchdog('content', t('There was a problem cancelling Filter account for '.$user->name.'.'), WATCHDOG_ERROR);
+				$error .= "<li>There was a problem removing your account, please contact <a href='/node/7'>Customer Support</a></li>";
+				$sweeper_cancelled = false;
+			}
+			
+			if($billing_cancelled && sweeper_cancelled){
+				$cutOffDate = ($user->created + (30 * 24 * 60 * 60));
+				if( $cutOffDate > time() && in_array($user->profile_current_plan, array("Month-to-month","Month-to-Month","month")) )
+				{
+					$daysLeft = number_format(($cutOffDate - time()) / 60 / 60 / 24);
+					$guarantee = true;
+				}
+				else
+				{
+					$guarantee = false;
+				}
+				$to = "billing@familyfellowship.com, nathan@ashleafmedia.com";
+				$from = variable_get('site_mail', ini_get('sendmail_from'));
+				
+				if ($guarantee) {
+					$to .= ", admin@familyfellowship.com";
+					$subject = "[FamilyFellowship.com :: Cancelation :: 30 DAY REFUND NEEDED]";
+					$body =
+					"{$user->profile_first_name} {$user->profile_last_name} (User ID: {$user->uid}) has canceled their account.\n".
+					"This user was eligible for the 30 Day Money Back Guarantee.\n".
+					"THIS USER WILL NEED A REFUND!\n".
+					"Please look this user's subscription up in the Merchant Interface using Subscription ID {$user->profile_subscription_id}\n".
+					"This user sent the following message:\n".
+					$_POST['message'];
+				} else {
+					$subject = "[FamilyFellowship.com :: Cancelation]";
+					$body = 
+					"{$user->profile_first_name} {$user->profile_last_name} (User ID: {$user->uid}) has canceled their account.\n.".
+					"This user's billing and sweeper accounts have been canceled. No further action is required.\n".
+					"This user sent the following message:\n".
+					$_POST['message'];
+				}
+				drupal_mail('sweeper_confirmation',$to,$subject,$body,$from);
+				//user_delete($edit, $user->uid);
+				
+				// _sweeper_user_block($user->uid);
+				_sweeper_set_role('canceled', $user->uid, array('delinquent', 'active'));
+				// Destroy the current session:
+				  session_destroy();
+				  module_invoke_all('user', 'logout', NULL, $user);
+
+				  // Load the anonymous user
+				  $user = drupal_anonymous_user();
+
+				  // drupal_goto('http://familyfellowship.com');
+				  // drupal_goto('/');
+				
+				$content .= 
+				"	<p class=\"notice\">".
+				"		Your website account has been suspended.  We are glad you have given us the oportunity to work with you to create a safer, more family-friendly, Christ-centered Interent experience.  We are sorry to see you go.  If you should change your mind, feel free to log back into your account on familyfellowship.com and click on the \"Sign Me Up Again!\" link.".
+				"	</p>";
+			}
+		} else { // Credentials do not match
+			$error .= 
+				"		<li>The values that you submitted did not match what we have".
+				"		on record. Please try again or ".
+				"		contact <a href='/node/7'>Customer Support</a>.</li>";
+		} // end if Credentials match
+
+	} 
+	if(empty($_POST) || isset($error)) 
+	{ // display cancellation form
+		
+		if ($error) {
+			$content .= 
+
+				"<div class=\"messages error\" style=\"margin-bottom: 10px;\">".
+				"	<p class=\"notice\">".
+				"		<span class=\"pop\">*** Please correct the issues below and try again: ***</span>".
+				"	</p>".
+				"	<p class=\"notice\">".
+				"	<ul>".
+				"		{$error}".
+				"	</ul>".
+				"	</p>".
+				"</div>";
+		}
+		
+		$content .= 
+			"<form method='post' action='/cancel'>".
+			"<div class=\"messages error\">".
+			"	<p class=\"notice\">".
+			"		<span class=\"pop\">***Please Note:</span> Before you cancel".
+			"		you FamilyFellowship.com Subscription you MUST UNINSTALL".
+			"		THE FILTER. After you cancel your subscription your filter".
+			"		will no longer function.  <strong>If you do not uninstall your".
+			"		filter before canceling you will not be able to use the".
+			"		Internet at all, and you will not be able to uninstall.</strong>".
+			"		If you need assistance with this, please contact".
+			"		<a href=\"/customer_care\" title=\"Contact Customer Care\">Customer Care</a>".
+			"	</p>".
+			"	<p class=\"notice\">If you have uninstalled the filter already, please check to box below.</p>".
+			"	<p class=\"notice\">".
+			"		<input type=\"checkbox\" name=\"uninstalled\" id=\"uninstalled\" $uninstalled />".
+			"		<label for=\"uninstalled\" class=\"pop\">I have uninstalled the FamilyFellowship.com Profile Manager from <strong>All</strong> the computers that I have said software installed on</label>".
+			"	</p>".
+			"</div>".
+			"<p>To cancel your account re-enter the following information, <i>This <b>cannot</b> be undone</i>:
+				<table>
+					<tr>
+						<td>Filter Profile Manager Username: </td>
+						<td><input type='text' name='username' value='$username' /></td>
+					</tr>
+					<tr>
+						<td>Filter Profile ManagerPassword: </td>
+						<td><input type='password' name='password' value='$password' /></td>
+					</tr>
+					<tr>
+						<td>Security Question: </td>".
+			"			<td>".
+			"				<select name=\"profile_security_q\" id=\"profile_security_q\">";
+
+			$content .= get_sweeper_question_array($question, $user->uid);
+
+			$content .=
+			"				</select><br />".
+			"			</td>
+					</tr>
+					<tr>
+						<td>Security Answer: </td>
+						<td><input type='text' name='security_answer' value='$answer' size=30 /></td>
+					</tr>
+					<tr>
+						<td colspan=\"2\">Reason for Canceling your account</td>
+					</tr>
+					<tr>
+						<td colspan=\"2\">
+						<textarea name=\"message\" id=\"message\" cols=\"60\" rows=\"10\"></textarea>
+						</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td><input type='submit' value='Cancel my account'></td>
+					</tr>
+				</table>
+			</form></p>";
+	}
+	
+	$content .= 
+	"	".
+	"	<p><a href=\"/my_account\">Back to My Account Page</a></p>".
+	"	";
+	return $content;
+}
+
+/**
+ * Callback function for admin mass blocking users.
+**/
+function _sweeper_user_block($uid) 
+{
+  // foreach ($accounts as $uid) {
+    $account = user_load(array('uid' => $uid));
+    // Skip blocking user if they are already blocked.
+    if ($account !== FALSE && $account->status == 1) {
+      user_save($account, array('status' => 0));
+    }
+  // }
+}
+
+/**
+ * Gets the value for the requested field and user.
+ * $field is the field name that needs to be retrieved.
+ * $userid is the $user->uid of the person that will be checked
+ * returns string with the value
+**/
+function _sweeper_get_profile_value($field,$userid) 
+{
+	$sql = "select v.value from profile_fields f, profile_values v where f.name = '".$field."' and f.fid = v.fid and v.uid = ".$userid." ";
+	$results = db_query($sql);
+	if($results){
+		$item = db_fetch_array($results);
+		$value = $item['value'];
+	} else { // end if $results
+		$value = false;
+	}
+	return $value;
+}
+
+/**
+ * This function makes it so that a page can be sent to a list of recipients
+**/
+function _sweeper_email_page($page = 'Salvation')
+{
+	$content = "";
+	if (empty($_POST)) {
+		$content .=
+		"<form action=\"/send_page\" method=\"post\">".
+		"<p>Recommend the FamilyFellowship.com ".$page." Page</p>".
+		"<table>".
+		"<tr>".
+		"	<td><label for=\"name\">Your Name:</label></td><td><input type=\"text\" name=\"name\" id=\"name\" /></td>".
+		"</tr><tr>".
+		"	<td><label for=\"send_email\">Your Email:</label></td><td><input type=\"text\" name=\"send_email\" id=\"send_email\" /></td>".
+		"</tr><tr>".
+		"	<td colspan=\"2\"><p>Recipient Email Addresses  º at least one º</p></td>".
+		"</tr><tr>".
+		"	<td><label for=\"email_1\">1.</label></td><td><input type=\"text\" name=\"email_1\" id=\"email_1\" /></td>".
+		"</tr><tr>".
+		"	<td><label for=\"email_2\">2.</label></td><td><input type=\"text\" name=\"email_2\" id=\"email_2\" /></td>".
+		"</tr><tr>".
+		"	<td><label for=\"email_3\">3.</label></td><td><input type=\"text\" name=\"email_3\" id=\"email_3\" /></td>".
+		"</tr><tr>".
+		"	<td><label for=\"email_4\">4.</label></td><td><input type=\"text\" name=\"email_4\" id=\"email_4\" /></td>".
+		"</tr><tr>".
+		"	<td colspan=\"2\"><label for=\"message\">Your Message  * Optional *</label></td>".
+		"</tr><tr>".
+		"	<td colspan=\"2\"><textarea name=\"message\" id=\"message\" cols=\"30\" rows=\"10\"></textarea></td>".
+		"</tr><tr>".
+		"	<input type=\"hidden\" name=\"page\" value=\"".strtolower($page)."\" />".
+		"	<td>&nbsp;</td><td><input type=\"submit\" value=\"Send!\" /></td>".
+		"</tr>".
+		"</table>".
+		"</form>";
+	}
+	else {
+		//Process the form and then display the stuff
+		$from = $_POST['send_email'];
+		$subject = $_POST['name'] . " (".$_POST['send_email'].") wants you to see our ". $_POST['page'] . " page.";
+		$to_array = array();
+		foreach ($_POST as $key => $value) {
+			if ($value != null && in_array($key, array('email_1','email_2','email_3','email_4'))) {
+				$to_array[] = $value;
+			}
+		}
+		$to = implode(', ', $to_array);
+		$body = 
+		"Hello,\n".
+		"\n".
+		"{$_POST['name']} thought you would like to visit the following pages: http://familyfellowship.com/{$_POST['page']}.  \n".
+		"\n".
+		"{$_POST['message']}\n".
+		"\n".
+		"\n".
+		"\n".
+		"Note: This message was not sent unsolicited.  It was sent through a form located at http://familyfellowship.com/{$_POST['page']}. If you believe this message was received on error, please disregard it.";
+		$to2 = "nathan@ashleafmedia.com";
+		$subject2 = "Notification of Salvation page email";
+		$from2 = "noreply@familyfellowship.com";
+		$body2 = 
+		"This email is to inform you that {$_POST['name']}<{$_POST['send_email']}> sent the salvation page to  the following recipients:\n".
+		"\t * {$_POST['email_1']}\n".
+		"\t * {$_POST['email_2']}\n".
+		"\t * {$_POST['email_3']}\n".
+		"\t * {$_POST['email_4']}\n".
+		"";
+		
+		drupal_mail('sweeper_confirmation',$to,$subject,$body,$from);
+		drupal_mail('sweeper_confirmation',$to2,$subject2,$body2,$from2);
+		$content = 
+		"<h3>Thank you for sending our {$_POST['page']} page to your friends</h3>".
+		"<p>Message was successfully sent to {$to}</p>".
+
+		"<p>Let him know that he who turns a sinner from the error of his way will save a soul from death and cover a multitude of sins. NKJV James 5:20</p>".
+
+		"<p>May God's Holy Spirit touch this person's heart to accept Christ as Lord and Savior and be Born again.</p>".
+
+		"<p>In Jesus name we pray, Amen</p>".
+		"<p><a href=\"/salvation\">Click here to return to the Salvation Page</a></p>";
+	}
+	return $content;
+}
+
+/**
+ * Validates that the Filter Client Username and password meet the requirements
+**/
+function _sweeper_validate_sweeper_credentials($username,$password) 
+{
+	$sql = "select v.value from profile_fields f, profile_values v where f.name = 'profile_sweeper_username' and f.fid = v.fid and v.value = '".$username."' ";
+	$results = db_query($sql);
+	if($results){
+		$item = db_fetch_array($results);
+		$errors[] = count($item);
+		if(count($item) > 1){
+			$errors[] = "Username already in use";
+		}
+	}
+	
+	if(strlen($username) > 16){
+		$errors[] = "The username is too long, please try something 16 characters or less.";
+	}	else if(preg_match("/\w{,16}/",$username)){
+		$errors[] = "The username contains invalid characters, only numbers, letters, underscores are allowed.";
+	}
+	if(strlen($password) > 8){
+		$errors[] = "The password is too long, please try something 8 characters or less.";
+	}	else if(preg_match("/\w{,8}/",$password)){
+		$errors[] = "The password contains invalid characters, only numbers, letters, underscores are allowed.";
+	}
+
+	return $errors;
+}
+
+function _sweeper_verify_sweeper($login)
+{
+	include_once("sweeper_account.php");
+	$sweep = new SweeperAccount;
+	$result = $sweep->verifyAccount($login);
+	return $result;
+}
+
+function _sweeper_create_sweeper($user, $pass, $email, $fname, $lname)
+{
+	include_once("sweeper_account.php");
+	$sweep = new SweeperAccount;
+	if ($sweep->addAccount($user,$pass,$email,$fname,$lname)) {
+		watchdog('user', t('Sweeper account has been created for '.$user.'.'));
+		$success = true;
+	}
+	else {
+		watchdog('user', t('Sweeper account has not been created for '.$user.'.'));
+		$success = false;
+		// die("Bomb");
+	}
+	// SweeperAccount::createAccount($user, $pass);
+	
+	return $success;
+}
+
+function _sweeper_cancel_sweeper($user)
+{
+	// SweeperAccount::deleteAccount($user);
+	include_once("sweeper_account.php");
+	$sweep = new SweeperAccount;
+	if ($deleted = $sweep->deleteAccount($user)) {
+		watchdog('user', t('Sweeper account has been removed for '.$user.'.'));
+		$success = true;
+	}
+	else {
+		$success = false;
+	}
+	return $success;
+}
+
+function _sweeper_cancel_billing($user)
+{
+	global $user;
+	$user = user_load(array("name" => $user->name));
+	
+	include ("data.php");
+	include ("authnetfunction.php");
+
+	//Define variables to send
+
+	$subscriptionId = intval($user->profile_subscription_id);
+	
+	$refId = $user->uid;
+
+	// echo "cancel subscription <br>";
+
+	//Build XML to post
+	$post_xml =
+	        "<?xml version=\"1.0\" encoding=\"utf-8\"?>".
+	        "<ARBCancelSubscriptionRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\">".
+	        "	<merchantAuthentication>".
+	        "		<name>" . $loginname . "</name>".
+	        "		<transactionKey>" . $transactionkey . "</transactionKey>".
+	        "	</merchantAuthentication>" .
+	        "	<refId>" . $refId . "</refId>".
+	        "	<subscriptionId>" . $subscriptionId . "</subscriptionId>".
+	        "</ARBCancelSubscriptionRequest>";
+
+	//Send the XML via curl
+	$response = send_request_via_curl($host,$path,$post_xml);
+	
+	//If the connection and send worked $response holds the return from Authorize.Net
+	if ($response)
+	{
+	   /*
+	   	parse_return is a function that shows how you can parse though the XML return if these other options are not avilable to      you.
+	   */
+	   list ($refId, $resultCode, $code, $text, $subscriptionId) =parse_return($response);
+
+		if ($text == "Successful." || $text == "The subscription has already been canceled.") {
+			//watchdog('user', t('Billing has been cancelled for '.$user.'.'));
+			$return = true;
+			return array($return, $refId, $resultCode, $code, $text, $subscriptionId);
+		} else {
+			// uhoh, it didn't work...			
+			//watchdog('user', t('Billing has not been cancelled for '.$user.'.'));
+			$return = false;
+			return array($return, $refId, $resultCode, $code, $text, $subscriptionId);
+		}
+		
+	}
+	else
+	{
+		// the send failed!
+		return array(false, null,null,null,"send failed", $subscriptionId);
+	}
+
+}
+
+/**
+ * Implementation of hook_user()
+ * Only functions on user deletion
+**/
+function sweeper_user($op, &$edit, &$account, $category = NULL)
+{
+	switch ($op) {
+		case "delete":
+			// _sweeper_cancel_sweeper($account->profile_sweeper_username);
+			break;
+
+		case "after_update":
+			//set sweeper password if username and password are synced;
+			break;
+
+		default:
+			break;
+	}
+	
+}
+
+function sweeper_edit_user()
+{
+	$content = "";
+	return $content;
+}
+
+function sweeper_profile_security_retrieval()
+{
+	$content = "";
+	$name = null;
+	$email = null;
+	global $user;
+	
+	// Load user data if it's not there
+	if ($_POST) 
+	{
+		$user = user_load(array("name" => $_POST['name']));
+	}
+	
+	if (!empty($_POST)) 
+	{
+		$question = $_POST['profile_security_q'];
+		$answer = $_POST['securitya'];
+		$name = $_POST['name'];
+		$email = $_POST['email'];
+		$phone = $_POST['phone'];
+		
+		if ( $user->profile_sweeper_username == $_POST['name'] && $user->profile_sweeper_password == $_POST['pass']) 
+		{
+			$content .= 
+			"<h3>Your security credentials match, here are your FamilyFellowship.com Security Question and Answer:</h3>\n".
+			"<div class=\"messages error\">\n".
+			"<p class=\"notice\">Question: {$user->profile_security_q}</p>\n".
+			"<p class=\"notice\">Answer: {$user->profile_security_a}</p>\n".
+			"</div>\n".
+			"<p>\n".
+			"	For your security, please close this window, or go to a\n".
+			"	different page as soon as you have taken note of your password\n".
+			"</p>\n".
+			"<p><a href=\"/my_account\">Click here to return to you \"My Account\" page</a></p>\n";
+		}
+		else 
+		{
+			$error = true;
+			$content .= 
+			"<div class=\"messages error\">\n".
+			"<h3>Your security credentials don't seem to match what we have on file.</h3>\n".
+			"<p class='notice'>Unfortunately, the Profile Manager username and password you entered don't match the ones we have on file for your account.  If you need help retrieving them, please <a href=\"/customer_care\">contact customer care</a></p>\n".
+			"</div>\n";
+		}
+	}
+	if(empty($_POST) || $error)
+	{
+		$content .= 
+		"	<p>\n".
+		"		Please fill out the form below to retrieve your\n".
+		"		FamilyFellowship.com Security Question and Answer.\n".
+		"		If all of the information entered matches what we have on file,\n".
+		"		your Security Question and Answer will be displayed on the\n".
+		"		screen.\n".
+		"	</p>\n".
+		"	<span class=\"hr\"><hr /></span>\n".
+		"	\n".
+		"	<form action=\"/customer_care/profile_security_retrieval\" method=\"post\">".
+		"		<div id=\"left_fields\">".
+		"			<p>".
+		"				<label for=\"edit-name\"><span>Profile Manager User Name</span> <input name=\"name\" id=\"edit-name\" class=\"text\" value=\"$name\" type=\"text\" /></label>".
+		"			</p>".
+		"		</div>".
+		"		<div id=\"right_fields\">".
+		"			<p>".
+		"				<label for=\"edit-pass\"><span>Profile Manager Password</span> <input name=\"pass\" id=\"edit-pass\" class=\"text\" type=\"password\" /></label>".
+		"			</p>".
+		"		</div>".
+		"		<input id=\"submitBtn\" onmouseout=\"this.src='/themes/famfel/img/submit.jpg'\" onmouseover=\"this.src='/themes/famfel/img/submit_over.jpg'\" type=\"image\" src=\"/themes/famfel/img/submit.jpg\" />".
+		"		<!--input type=\"submit\" value=\"Submit Query\" /-->".
+		"	</form>";
+	}
+	return $content;
+}
+
+function sweeper_profile_password_retrieval()
+{
+	$content = "";
+	$question = null;
+	$answer = null;
+	$name = null;
+	$email = null;
+	
+	// Load user data if it's not there, since you have to be logged in to do this, we can use $user
+	
+		global $user;
+		$account = user_load(array('uid' => $user->uid));
+	
+	
+	if (!empty($_POST)) 
+	{
+		$question = $_POST['profile_security_q'];
+		$answer = $_POST['securitya'];
+		$name = $_POST['name'];
+		$email = $_POST['email'];
+		if ($account->profile_security_q == $_POST['profile_security_q'] && $account->profile_security_a == $_POST['securitya'] && $account->mail == $_POST['email']) 
+		{
+			$content = 
+			"<h3>Your security credentials match, here is your Profile Manager Password:</h3>".
+			"<div class=\"messages error\">".
+			"<p class=\"notice\">{$account->profile_sweeper_password}</p>".
+			"</div>".
+			"<p>".
+			"	For your security, please close this window, or go to a".
+			"	different page as soon as you have taken note of your password".
+			"</p>".
+			"<p><a href=\"/my_account\">Click here to return to you \"My Account\" page</a></p>";
+		}
+		else 
+		{
+			$error = true;
+			$content = 
+			"<div class=\"messages error\">".
+			"<h3>Your security credentials don't seem to match what we have on file.</h3>".
+			"<p>Unfortunately, the Security Question, Answer and email address you entered don't match the ones we have on file for your account.  If you need help retrieving them, please <a href=\"/customer_care\">contact customer care</a></p>".
+			"</div>";
+		}
+	}
+	if(empty($_POST) || $error)
+	{
+		$content .= 
+		"	<p>".
+		"		Please fill out the form below to retrieve your FamilyFellowship.com Profile Manager Password.".
+		"		If all of the information entered matches what we have on file, your Profile Manager Password will be displayed on the screen.".
+		"	</p>".
+		"	<span class=\"hr\"><hr /></span>".
+		"	".
+		"	<form action=\"/customer_care/profile_password_retrieval\" method=\"post\">".
+		"		<div id=\"left_fields\">".
+		"			<p>".
+		"				<label for=\"edit-name\"><span>Your My Account User Name</span> <input name=\"name\" id=\"edit-name\" class=\"text\" type=\"text\" value=\"$name\" /></label>".
+		"			</p>".
+		"			<p>".
+		"				<label for=\"profile_security_q\"><span>Security Question</span></label>".
+		"				<select name=\"profile_security_q\" id=\"profile_security_q\">";
+
+		$content .= get_sweeper_question_array($question, $account->uid);
+
+		$content .=
+		"				</select>".
+		"				Please choose your question from the drop down menu above".
+		"			</p>".
+		"		</div>".
+		"		<div id=\"right_fields\">".
+		"			<p>".
+		"				<label for=\"edit-email\"><span>Email</span> <input name=\"email\" id=\"edit-email\" class=\"text\" type=\"text\" value=\"$email\" /></label>".
+		"			</p>".
+		"			<p>".
+		"				<label for=\"edit-securitya\"><span>Security Answer</span> <input name=\"securitya\" id=\"edit-securitya\" class=\"text\" type=\"text\" value=\"$answer\" /></label>".
+		"			</p>".
+		"		</div>".
+		"		<input id=\"submitBtn\" onmouseout=\"this.src='/themes/famfel/img/submit.jpg'\" onmouseover=\"this.src='/themes/famfel/img/submit_over.jpg'\" type=\"image\" src=\"/themes/famfel/img/submit.jpg\" />".
+		"	</form>";
+	}
+	
+	return $content;
+}
+
+function sweeper_account_password_retrieval()
+{
+	$content = "";
+	$question = null;
+	$answer = null;
+	$name = null;
+	$email = null;
+	
+	// Load user data if it's not there, since you have to be logged in to do this, we can use $user
+	
+		global $user;
+		
+	
+	
+	if (!empty($_POST)) 
+	{
+		
+		if($_POST['initial'] == 1){
+			$name = $_POST['name'];
+			$email = $_POST['email'];
+			if ($_POST['name']) {
+				$account = user_load(array('name' => $_POST['name']));
+			}
+			elseif ($_POST['email']) {
+				$account = user_load(array('mail' => $_POST['email']));
+			}
+			
+			if($account->uid == 0 || empty($account)) {
+				$error1 = true;
+				$content .= 
+				"<div class='messages error'>".
+				"	<p class='notice'>You must enter either your My Account name, or the email address you entered when you signed up.</p>".
+				"</div>";
+			}
+		}
+		else {
+			$account = user_load(array('uid' => $_POST['uid']));
+			$question = $_POST['profile_security_q'];
+			$answer = $_POST['securitya'];
+			if ($account->profile_security_q == $_POST['profile_security_q'] && $account->profile_security_a == $_POST['securitya']) 
+			{
+				$content = 
+				"<h3>Your security credentials match, here is your My Account Username and Password:</h3>".
+				"<div class=\"messages error\">".
+				"<p class=\"notice\"><strong>Username: </strong>{$account->name}</p>".
+				"<p class='notice'><strong>Password: </strong>{$account->pass}</p>".
+				"</div>".
+				"<p>".
+				"	For your security, please close this window, or go to a".
+				"	different page as soon as you have taken note of your password".
+				"</p>".
+				"<p><a href=\"/my_account\">Click here to return to you \"My Account\" page</a></p>";
+			}
+			else 
+			{
+				$error2 = true;
+				$content = 
+				"<div class=\"messages error\">".
+				"<h3>Your security credentials don't seem to match what we have on file.</h3>".
+				"<p class='notice'>Unfortunately, the Security Question and Answer you entered don't match the ones we have on file for your account.  If you need help retrieving them, please <a href=\"/customer_care\">contact customer care</a></p>".
+				"</div>";
+			}
+		}
+	}
+	if(empty($_POST) || $error1)
+	{
+		$content .= 
+		"	<p>".
+		"		Please fill out the form below to begin the process of retrieving your FamilyFellowship.com My Account Password.".
+		"	</p>".
+		"	<p>".
+		"		You will need to enter <em>either</em> your My Account User Name or the email address you used to sign up for your account.".
+		"	</p>".
+		"	<span class=\"hr\"><hr /></span>".
+		"	".
+		"	<form action=\"/customer_care/account_password_retrieval\" method=\"post\">".
+		"		<input type='hidden' value='1' name='initial' />".
+		"		<div id=\"left_fields\">".
+		"			<p>".
+		"				<label for=\"edit-name\"><span>Your My Account User Name:</span> <input name=\"name\" id=\"edit-name\" class=\"text\" type=\"text\" value=\"$name\" /></label>".
+		"			</p>".
+		"		</div>".
+		"		<div id=\"right_fields\">".
+		"			<p>".
+		"				<label for=\"edit-email\"><span>Email</span> <input name=\"email\" id=\"edit-email\" class=\"text\" type=\"text\" value=\"$email\" /></label>".
+		"			</p>".
+		"		</div>".
+		"		<input id=\"submitBtn\" onmouseout=\"this.src='/themes/famfel/img/submit.jpg'\" onmouseover=\"this.src='/themes/famfel/img/submit_over.jpg'\" type=\"image\" src=\"/themes/famfel/img/submit.jpg\" />".
+		"	</form>";
+	}
+	elseif ($_POST['initial']==1 || $error2) {
+		$content .= 
+		"	<p>".
+		"		Please fill out the form below to retrieve your FamilyFellowship.com My Account Password.".
+		"		If all of the information entered matches what we have on file, your My Account Password will be displayed on the screen.".
+		"	</p>".
+		"	<span class=\"hr\"><hr /></span>".
+		"	".
+		"	<form action=\"/customer_care/account_password_retrieval\" method=\"post\">".
+		"	<input type='hidden' value='{$account->uid}' name='uid' />".
+		"		<div id=\"left_fields\">".
+		"			<p>".
+		"				<label for=\"profile_security_q\"><span>Security Question</span></label>".
+		"				<select name=\"profile_security_q\" id=\"profile_security_q\">";
+
+		$content .= get_sweeper_question_array($question, $account->uid);
+
+		$content .=
+		"				</select>".
+		"			</p>".
+		"		</div>".
+		"		<div id=\"right_fields\">".
+		"			<p>".
+		"				<label for=\"edit-securitya\"><span>Security Answer</span> <input name=\"securitya\" id=\"edit-securitya\" class=\"text\" type=\"text\" value=\"$answer\" /></label>".
+		"			</p>".
+		"		</div>".
+		"		<input id=\"submitBtn\" onmouseout=\"this.src='/themes/famfel/img/submit.jpg'\" onmouseover=\"this.src='/themes/famfel/img/submit_over.jpg'\" type=\"image\" src=\"/themes/famfel/img/submit.jpg\" />".
+		"	</form>";
+	}
+	
+	return $content;
+}
+
+function sweeper_customer_care_contact()
+{ 
+	$mail_error = user_validate_mail($_POST['email']);
+	if ($mail_error) {
+		drupal_set_message($mail_error, 'error');
+	}
+	if (!$_POST['message']) {
+		drupal_set_message('You must enter a message.', 'error');
+	}
+	if(empty($_POST) )
+	{
+		drupal_set_message('You must fill the form out first.', 'error');
+	}
+	if (isset($_POST['uname']) and $_POST['uname'] != null) {
+		$stubb = user_load(array('name'=>$_POST['uname']));
+		if (!$stubb) {
+			drupal_set_message('The username entered is not valid.', 'error');
+			$mail_error = true;
+		}
+	}
+	
+	if(!$_POST || !$_POST['message'] || $mail_error )
+	{
+		drupal_goto('customer_care');
+	}
+	else
+	{
+		$to = "nathan@ashleafmedia.com, support@familyfellowship.com";
+		$from = $_POST['email'];
+		$subject = "FamilyFellowship.com [Support Request] from ". $_POST['name'];
+		$body =
+		$_POST['name']." sent the following customer care request email:\n".
+		"\n".
+		"Username: \t".$_POST['uname']."\n".
+		"Email: \t". $_POST['email']."\n".
+		"Phone: \t". $_POST['phone']."\n".
+		"Message: \n".
+		$_POST['message'];
+		if (drupal_mail("support request", $to, $subject, $body, $from)) {
+			$content = "<h3>Your Request was sent.</h3> <p>A Customer Care Representative will contact you within the next business day</p><p><a href=\"/my_account\">Click here to return to your account</a></p>";
+		} else {
+			$content = "<h3>There was an error unfortunatly.</h3><p>Please contact <a href=\"/customer_care\">Customer Care</a>.</p>";
+		}
+		
+		return $content;
+	}
+}
+
+/**
+ * Verify the syntax of the given name.
+**/
+function sweeper_validate_name($name) 
+{
+	$error = array();
+	$sql = "select v.value from profile_fields f, profile_values v where f.name = 'profile_sweeper_username' and f.fid = v.fid and v.value = '".$name."' ";
+	
+	$results = db_query($sql);
+	if($results){
+		$item = db_fetch_array($results);
+		
+		if(count($item) > 0 && is_array($item)){
+			
+			return t("This username already in use.  Please choose another");
+		}
+	}
+	
+  if (!strlen($name)) return t('You must enter a username.');
+  if (substr($name, 0, 1) == ' ') return t('The username cannot begin with a space.');
+  if (substr($name, -1) == ' ') return t('The username cannot end with a space.');
+  if (strpos($name, ' ') !== FALSE) return t('The username cannot contain spaces');
+  if (ereg("[^\x80-\xF7 [:alnum:]@_.-]", $name)) return t('The username contains an illegal character.');
+  if (preg_match('/[\x{80}-\x{A0}'.          // Non-printable ISO-8859-1 + NBSP
+                   '\x{AD}'.                 // Soft-hyphen
+                   '\x{2000}-\x{200F}'.      // Various space characters
+                   '\x{2028}-\x{202F}'.      // Bidirectional text overrides
+                   '\x{205F}-\x{206F}'.      // Various text hinting characters
+                   '\x{FEFF}'.               // Byte order mark
+                   '\x{FF01}-\x{FF60}'.      // Full-width latin
+                   '\x{FFF9}-\x{FFFD}'.      // Replacement characters
+                   '\x{0}]/u',               // NULL byte
+                   $name)) {
+    return t('The username contains an illegal character.');
+  }
+  if (strpos($name, '@') !== FALSE && !eregi('@([0-9a-z](-?[0-9a-z])*.)+[a-z]{2}([zmuvtg]|fo|me)?$', $name)) return t('The username is not a valid authentication ID.');
+  if (strlen($name) > SWEEPERNAME_MAX_LENGTH) return t('The username %name is too long: it must be %max characters or less.', array('%name' => $name, '%max' => SWEEPERNAME_MAX_LENGTH));
+  if (strlen($name) < SWEEPERNAME_MIN_LENGTH) return t('The username %name is too short: it must be between %min and %max characters.', array('%name'=>$name, '%min'=>SWEEPERNAME_MIN_LENGTH, '%max'=>SWEEPERNAME_MAX_LENGTH));
+  
+}
+
+/**
+ * Verify the syntax of the given PASS.
+**/
+function sweeper_validate_pass($pass) 
+{
+  if (!strlen($pass)) return t('You must enter a password.');
+  if (substr($pass, 0, 1) == ' ') return t('The password cannot begin with a space.');
+  if (substr($pass, -1) == ' ') return t('The password cannot end with a space.');
+  if (strpos($pass, ' ') !== FALSE) return t('The password cannot contain spaces');
+  if (ereg("[^\x80-\xF7 [:alnum:]@_.-]", $pass)) return t('The password contains an illegal character.');
+  if (preg_match('/[\x{80}-\x{A0}'.          // Non-printable ISO-8859-1 + NBSP
+                   '\x{AD}'.                 // Soft-hyphen
+                   '\x{2000}-\x{200F}'.      // Various space characters
+                   '\x{2028}-\x{202F}'.      // Bidirectional text overrides
+                   '\x{205F}-\x{206F}'.      // Various text hinting characters
+                   '\x{FEFF}'.               // Byte order mark
+                   '\x{FF01}-\x{FF60}'.      // Full-width latin
+                   '\x{FFF9}-\x{FFFD}'.      // Replacement characters
+                   '\x{0}]/u',               // NULL byte
+                   $pass)) {
+    return t('The password contains an illegal character.');
+  }
+  if (strpos($pass, '@') !== FALSE && !eregi('@([0-9a-z](-?[0-9a-z])*.)+[a-z]{2}([zmuvtg]|fo|me)?$', $name)) return t('The password contains an invalid character');
+  if (strlen($pass) > SWEEPERPASS_MAX_LENGTH) return t('The password %name is too long: it must be %max characters or less.', array('%name' => $pass, '%max' => SWEEPERPASS_MAX_LENGTH));
+  if (strlen($pass) < SWEEPERPASS_MIN_LENGTH) return t('The password %name is too short: it must be between %min and %max characters.', array('%name'=>$pass, '%min'=>SWEEPERPASS_MIN_LENGTH, '%max'=>SWEEPERPASS_MAX_LENGTH));
+}
+
+function _sweeper_derive_plan($plan = null)
+{
+	if (!$plan) {
+		$user = user_load(array("name" => $user->name));
+		$plan = $user->profile_current_plan;
+	}
+	// echo "<pre>".print_r($user)."</pre>";
+	// 	echo "<h3>{$plan}</h3>";
+	switch ($plan) 
+	{
+		case "Month-to-Month":
+			$subscription = 1;
+			break;
+		case "Month-to-month":
+			$subscription = 1;
+			break;
+		case "Quarterly":
+			$subscription = 2;
+			break;
+		case "Semi-Annual":
+			$subscription = 3;
+			break;
+		case "Annual":
+			$subscription = 4;
+			break;
+		case "2 year":
+			$subscription = 4;
+			break;
+		default:
+			$subscription = 1;
+			// die("There was an error");
+			break;
+	}
+	return $subscription;
+}
+
+function _sweeper_derive_plan2($subscription)
+{
+	// echo "<h3>{$subscription}</h3>";
+	// 	echo "<p>this came from part 2</p>";
+	switch ($subscription) 
+	{
+		case '1':
+		$unit = 'months';
+		$length = '1';
+		// $totalOccurrences = '36';
+		$amount = '5.95';
+		$subscriptionName = 'Month-to-Month';
+		break;
+
+		case '2':
+		$unit = 'months';
+		$length = '3';
+		// $totalOccurrences = '12';
+		$amount = '15.95';
+		$subscriptionName = 'Quarterly';
+		break;
+
+		case '3':
+		$unit = 'months';
+		$length = '6';
+		// $totalOccurrences = '6';
+		$amount = '27.95';
+		$subscriptionName = 'Semi-Annual';
+		break;
+
+		case '4':
+		$unit = 'months';
+		$length = '12';
+		// $totalOccurrences = '3';
+		$amount = '49.95';
+		$subscriptionName = 'Annual';
+		break;
+	}
+	
+	// We're going to override the above $totalOccurrences since we can now have
+	// "never ending" subscriptions.  All will have the falue 9999
+	$totalOccurrences = '9999';
+		// echo "<h3>Details</h3>";
+		// 		echo 
+		// 		"<table>".
+		// 		"	<tr>".
+		// 		"		<td>Unit</td><td>$unit</td>".
+		// 		"	</tr><tr>".
+		// 		"		<td>Length</td><td>$length</td>".
+		// 		"	</tr><tr>".
+		// 		"		<td>TotalOccurrences</td><td>$totalOccurrences</td>".
+		// 		"	</tr><tr>".
+		// 		"		<td>Amount</td><td>$amount</td>".
+		// 		"	</tr><tr>".
+		// 		"		<td>Subscription Name</td><td>$subscriptionName</td>".
+		// 		"	</tr>".
+		// 		"</table>";
+	return array($unit, $length, $totalOccurrences, $amount, $subscriptionName);
+}
+
+?>

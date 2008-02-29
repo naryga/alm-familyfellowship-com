@@ -1,0 +1,8 @@
+name = Component
+description = Helper functions to do pull-based templates and provide convenient Ajax callbacks
+
+; Information added by drupal.org packaging script on 2007-06-19
+version = "5.x-1.x-dev"
+project = "component"
+datestamp = "1182211604"
+

@@ -1,0 +1,347 @@
+<?php
+// $Id: site_user_list.install,v 1.1.2.3.2.9 2007/07/12 14:06:56 pukku Exp $
+
+include_once('site_user_list.module');
+
+function site_user_list_install() {
+  $default_query_type = 'query';
+  
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query(
+        "CREATE TABLE {site_user_list_fields} (
+          field_identifier varchar(255) not null,
+          display int not null default 0,
+          column_header varchar(255) not null,
+          weight int not null default 0,
+          db_column varchar(255) not null,
+          search_column varchar(255),
+          sort_column varchar(255),
+          eval_template int default 0,
+          template_condition_columns varchar(255),
+          template text
+        ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
+      );
+      if (version_compare(db_version(), '4.1', '<')) {
+        $default_query_type = 'table';
+      }
+      break;
+    
+    case 'pgsql':
+      db_query(
+        "CREATE TABLE {site_user_list_fields} (
+          field_identifier varchar(255) not null,
+          display int not null default 0,
+          column_header varchar(255) not null,
+          weight int not null default 0,
+          db_column varchar(255) not null,
+          search_column varchar(255),
+          sort_column varchar(255),
+          eval_template int default 0,
+          template_condition_columns varchar(255),
+          template text
+        )"
+      );
+      break;
+  }
+
+  variable_set('site_user_list_query_type', $default_query_type);
+  drupal_set_message('Please make sure you visit the ' . l('Site User List settings page', 'admin/settings/site_user_list/general') . ' to configure this module!');
+  
+  // set up a default view
+  db_query("INSERT INTO {site_user_list_fields} (field_identifier, display, column_header, weight,
+                                                 db_column, search_column, sort_column,
+                                                 eval_template, template)
+            VALUES ('@uid', 3, 'User ID', -1, '@uid', '@uid', '@uid', 0, '@uid')");
+
+  db_query("INSERT INTO {site_user_list_fields} (field_identifier, display, column_header, weight,
+                                                 db_column, search_column, sort_column,
+                                                 eval_template, template)
+            VALUES ('@name', 3, 'User name', 0, '@name', '@name', '@name', 0, '@name')");
+
+  db_query("INSERT INTO {site_user_list_fields} (field_identifier, display, column_header, weight,
+                                                 db_column, search_column, sort_column,
+                                                 eval_template, template)
+            VALUES ('@mail', 3, 'Email', 1, '@mail', '@mail', '@mail', 0, '<a href=\"mailto:@mail\">@mail</a>')");
+
+  db_query("INSERT INTO {site_user_list_fields} (field_identifier, display, column_header, weight,
+                                                 db_column, search_column, sort_column,
+                                                 eval_template, template)
+            VALUES ('@user_view', 4, '', 19, '', '', '', 0, 'view')");
+
+  db_query("INSERT INTO {site_user_list_fields} (field_identifier, display, column_header, weight,
+                                                 db_column, search_column, sort_column,
+                                                 eval_template, template)
+            VALUES ('@user_edit', 4, '', 20, '', '', '', 0, 'edit')");
+
+}
+
+function site_user_list_uninstall() {
+  db_query("DROP TABLE {site_user_list_fields}");
+  
+  $log = variable_get('site_user_list_log_rebuilds', 0);
+  if (db_table_exists("{site_user_list_view}")) {
+    db_query("DROP VIEW {site_user_list_view}");
+    if ($log) {
+      watchdog('site_user_list', 'Dropped view {site_user_list_view} as part of uninstall');
+    }
+  }
+  if (db_table_exists("{site_user_list_table}")) {
+    db_query("DROP TABLE {site_user_list_table}");
+    if ($log) {
+      watchdog('site_user_list', 'Dropped table {site_user_list_table} as part of uninstall');
+    }
+  }
+  
+  variable_del('site_user_list_query_type');
+  variable_del('site_user_list_select_from');
+  variable_del('site_user_list_use_cron');
+  variable_del('site_user_list_log_rebuilds');
+  
+  variable_del('site_user_list_title');
+  variable_del('site_user_list_column_delta');
+  
+  variable_del('site_user_list_d_show');
+  variable_del('site_user_list_d_weight');
+
+  variable_del('site_user_list_s_show');
+  variable_del('site_user_list_s_weight');
+  variable_del('site_user_list_s_before');
+  variable_del('site_user_list_s_after');
+
+  variable_del('site_user_list_r_show');
+  variable_del('site_user_list_r_weight');
+  variable_del('site_user_list_r_count');
+  variable_del('site_user_list_include_blocked_users');
+  variable_del('site_user_list_display_sql_query');
+  
+  // this should be in profile.module
+  variable_del('profile_site_user_list_visible_fields');
+  variable_del('profile_site_user_list_exclude_fid');
+  variable_del('profile_site_user_list_exclude_set');
+  
+  drupal_set_message('The Site User List module has been uninstalled.');
+}
+
+/* update from the 4.6 version */
+function site_user_list_update_1() {
+  /* this is useless in this context, because the 4.6 version
+     was never released to the public */
+}
+
+function site_user_list_update_2() {
+  variable_set('site_user_list_query_type', 'view');
+  variable_set('site_user_list_select_from', 'site_user_list_view');
+  if (function_exists('_site_user_list_regen')) {
+    _site_user_list_regen(true);
+  }
+}
+
+/* renamed a bunch of variables, so we need to transition them. */
+function site_user_list_update_3() {
+  variable_set('site_user_list_results_show', variable_get('site_user_list_results_show', variable_get('site_user_list_results_display_show', 1)));
+  variable_del('site_user_list_results_display_show');
+  variable_set('site_user_list_results_weight', variable_get('site_user_list_results_weight', variable_get('site_user_list_results_display_weight', 0)));
+  variable_del('site_user_list_results_display_weight');
+  variable_set('site_user_list_results_view_column', variable_get('site_user_list_results_view_column', variable_get('site_user_list_results_display_view_column', 1)));
+  variable_del('site_user_list_results_display_view_column');
+  variable_set('site_user_list_results_view_column_title', variable_get('site_user_list_results_view_column_title', variable_get('site_user_list_results_display_view_column_title', '')));
+  variable_del('site_user_list_results_display_view_column_title');
+  variable_set('site_user_list_results_edit_column', variable_get('site_user_list_results_edit_column', variable_get('site_user_list_results_display_edit_column', 1)));
+  variable_del('site_user_list_results_display_edit_column');
+  variable_set('site_user_list_results_edit_column_title', variable_get('site_user_list_results_edit_column_title', variable_get('site_user_list_results_display_edit_column_title', '')));
+  variable_del('site_user_list_results_display_edit_column_title');
+}
+
+/**
+ * A huge update, because we rewrote pretty much everything from scratch...
+ */
+function site_user_list_update_4() {
+  $ret = array();
+
+  // first, install the table
+  $default_query_type = variable_get('site_user_list_query_type', 'view');
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql(
+        "CREATE TABLE {site_user_list_fields} (
+          field_identifier varchar(255) not null,
+          display int not null default 0,
+          column_header varchar(255) not null,
+          weight int not null default 0,
+          db_column varchar(255) not null,
+          search_column varchar(255),
+          sort_column varchar(255),
+          eval_template int default 0,
+          template text
+        ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
+      );
+      if (version_compare(db_version(), '4.1', '<')) {
+        $default_query_type = 'table';
+      }
+      break;
+    
+    case 'pgsql':
+      $ret[] = update_sql(
+        "CREATE TABLE {site_user_list_fields} (
+          field_identifier varchar(255) not null,
+          display int not null default 0,
+          column_header varchar(255) not null,
+          weight int not null default 0,
+          db_column varchar(255) not null,
+          search_column varchar(255),
+          sort_column varchar(255),
+          eval_template int default 0,
+          template text
+        )"
+      );
+      break;
+  }
+  
+  if ($default_query_type != variable_get('site_user_list_query_type', 'view')) {
+    variable_set('site_user_list_query_type', $default_query_type);
+    $ret[] = array('success' => true, 'query' => 'Default query type set to "' . $default_query_type . '".  Please check your settings!');
+  }
+
+  // now, we need to insert rows for the columns
+  $field_names = variable_get('site_user_list_field_names', array('uid' => 'User ID', 'name' => 'Username', 'mail' => 'Email Address'));
+  $allowed = array_filter(variable_get('site_user_list_allowed_fields', array('name' => 1, 'mail' => 2)));
+  asort($allowed, SORT_NUMERIC);
+  $display_request = variable_get('site_user_list_default_fields', array('name' => 1, 'mail' => 1));
+  $fields = array();
+  foreach ($allowed as $c => $weight) {
+    $fields["@$c"] = array(
+      'field_identifier' => "@$c",
+      'display' => ($display_request[$c] ? 2 : 1),
+      'column_header' => $field_names[$c],
+      'weight' => $weight,
+      'db_column' => "@$c",
+      'search_column' => "@$c",
+      'sort_column' => "@$c",
+      'eval_template' => 0,
+      'template' => "@$c",
+    );
+    if ($c == 'mail') {
+      $fields["@$c"]['template'] = '<a href="mailto:@mail">@mail</a>';
+    }
+    $ret[] = array('success' => true, 'query' => 'Created definition for column ' . $c);
+  }
+  
+  variable_del('site_user_list_allowed_fields');
+  variable_del('site_user_list_default_fields');
+  variable_del('site_user_list_field_names');
+  $ret[] = array('success' => true, 'query' => 'Removed old column variables');
+  
+  // add the view and edit columns back into the mix
+  if (variable_get('site_user_list_results_view_column', 1)) {
+    $fields["@user_view"] = array(
+      'field_identifier' => "@user_view",
+      'display' => 3,
+      'column_header' => variable_get('site_user_list_results_view_column_title', ''),
+      'weight' => 19,
+      'db_column' => '',
+      'search_column' => '',
+      'sort_column' => '',
+      'eval_template' => 0,
+      'template' => "view",
+    );
+    $ret[] = array('success' => true, 'query' => 'Added definition for view column');
+  }
+  variable_del('site_user_list_results_view_column');
+  variable_del('site_user_list_results_view_column_title');
+  $ret[] = array('success' => true, 'query' => 'Removed view column variables');
+
+  if (variable_get('site_user_list_results_edit_column', 1)) {
+    $fields["@user_edit"] = array(
+      'field_identifier' => "@user_edit",
+      'display' => 3,
+      'column_header' => variable_get('site_user_list_results_edit_column_title', ''),
+      'weight' => 20,
+      'db_column' => '',
+      'search_column' => '',
+      'sort_column' => '',
+      'eval_template' => 0,
+      'template' => "edit",
+    );
+    $ret[] = array('success' => true, 'query' => 'Added definition for edit column');
+  }
+  variable_del('site_user_list_results_edit_column');
+  variable_del('site_user_list_results_edit_column_title');
+  $ret[] = array('success' => true, 'query' => 'Removed edit column variables');
+  
+  // insert the rows
+  // we are emulating a lot of db_query here so that we can use update_sql properly
+  $f_insert_sql = "INSERT INTO {site_user_list_fields} (field_identifier, display, column_header, weight, db_column, search_column, sort_column, eval_template, template) VALUES ('%s', %d, '%s', %d, '%s', '%s', '%s', %d, '%s')";
+  foreach ($fields as $f) {
+    $vals = array($f['field_identifier'], $f['display'], $f['column_header'], $f['weight'], $f['db_column'], $f['search_column'], $f['sort_column'], $f['eval_template'], $f['template']);
+    _db_query_callback($vals, TRUE);
+    $query = preg_replace_callback('/(%d|%s|%%|%f|%b)/', '_db_query_callback', $f_insert_sql);
+    
+    $ret[] = update_sql($query);
+  }
+  $ret[] = array('success' => true, 'query' => 'If no errors were thrown, we have inserted all the necessary rows');
+  
+  
+  // move over the profile field type settings
+  variable_set('profile_site_user_list_visible_fields', variable_get('site_user_list_field_privacy_settings', array(PROFILE_PUBLIC, PROFILE_PUBLIC_LISTINGS)));
+  variable_del('site_user_list_field_privacy_settings');
+  $ret[] = array('success' => true, 'query' => 'Profile privacy settings moved.');
+  
+  // move over other variables
+  $q_type = variable_get('site_user_list_query_type', 'view');
+  variable_set('site_user_list_select_from', '{site_user_list_' . $q_type . '}');
+  $ret[] = array('success' => true, 'query' => 'Updated select from item to include braces.');
+  
+  variable_set('site_user_list_d_show', variable_get('site_user_list_display_form_show', 1));
+  variable_del('site_user_list_display_form_show');
+  variable_set('site_user_list_d_weight', variable_get('site_user_list_display_form_weight', -2));
+  variable_del('site_user_list_display_form_weight');
+  $ret[] = array('success' => true, 'query' => 'Display form settings moved.');
+
+  variable_set('site_user_list_s_show', variable_get('site_user_list_search_form_show', 1));
+  variable_del('site_user_list_search_form_show');
+  variable_set('site_user_list_s_weight', variable_get('site_user_list_search_form_weight', -1));
+  variable_del('site_user_list_search_form_weight');
+  variable_set('site_user_list_s_before', 1);
+  $ret[] = array('success' => true, 'query' => 'Search form settings moved.');
+
+  variable_set('site_user_list_r_show', variable_get('site_user_list_results_show', 1));
+  variable_del('site_user_list_results_show');
+  variable_set('site_user_list_r_weight', variable_get('site_user_list_results_weight', 0));
+  variable_del('site_user_list_results_weight');
+  $ret[] = array('success' => true, 'query' => 'Results table settings moved.');
+  
+  if (variable_get('site_user_list_theme_cells', 0)) {
+    $ret[] = array('success' => true, 'query' => 'YOU ARE USING THEMED COLUMNS -- THIS IS NO LONGER SUPPORTED -- PLEASE LOOK AT THE TEMPLATES FOR YOUR COLUMNS');
+  }
+  variable_del('site_user_list_theme_cells');
+
+  $ret[] = array('success' => true, 'query' => 'Site User List update completed.');
+  
+  return $ret;
+}
+
+function site_user_list_update_5() {
+  $ret = array();
+  $ret[] = update_sql("UPDATE {site_user_list_fields} SET display = display + 1 WHERE display > 0");
+  return $ret;
+}
+
+function site_user_list_update_6() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {site_user_list_fields} ADD template_condition_columns varchar(255)");
+      break;
+    
+    case 'pgsql':
+      db_add_column($ret, 'site_user_list_fields', 'template_condition_columns', 'varchar(255)');
+      break;
+  }
+  return $ret;
+}
+
+?>

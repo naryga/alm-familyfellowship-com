@@ -1,0 +1,639 @@
+# SPANISH translation of DRUPAL quotes.module
+# Copyright 2005 Eduin Yezid Carrillo Vega <webmaster@scoutsace.org>
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: quotes.module $Id\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2005-07-22 09:24-0500\n"
+"Last-Translator: Eduin Yezid Carrillo Vega\n"
+"Language-Team: SPANISH <webmaster@scoutsace.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Poedit-Language: Spanish\n"
+"X-Poedit-Basepath: C:/projects/drupal/contributions/modules/quotes\n"
+"X-Poedit-KeywordsList: t\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: install.inc:35
+msgid "A newer version of the quotes module is already installed."
+msgstr "Una nueva versión del módulo de frases ya está instalada."
+
+#: quotes.module:77
+#: quotes.module:91
+#: quotes.module:108
+#: quotes.module:149
+#: quotes.module:352
+#: quotes.module:385
+#: quotes.module:872
+msgid "quotes"
+msgstr "frases"
+
+#: quotes.module:81
+msgid "add"
+msgstr "agregar"
+
+#: quotes.module:86
+msgid "import"
+msgstr "importar"
+
+#: quotes.module:97
+msgid "RSS feed"
+msgstr "suministro XML"
+
+#: quotes.module:103
+msgid "my quotes"
+msgstr "mis frases"
+
+#: quotes.module:113
+msgid "overview"
+msgstr "resumen"
+
+#: quotes.module:119
+msgid "configure blocks"
+msgstr "configurar bloques"
+
+#: quotes.module:124
+msgid "add block"
+msgstr "agregar bloque"
+
+#: quotes.module:130
+msgid "configure quote block"
+msgstr "configurar bloque de frases"
+
+#: quotes.module:135
+msgid "delete quote block"
+msgstr "borrar bloque de frases"
+
+#: quotes.module:145
+msgid "upgrade"
+msgstr "actualizar"
+
+#: quotes.module:161
+msgid "quote"
+msgstr "frase"
+
+#: quotes.module:191
+msgid "Display in quote blocks"
+msgstr "Mostrar en bloque de frases"
+
+#: quotes.module:196
+msgid "Format"
+msgstr "Formato"
+
+#: quotes.module:196
+msgid "Tab-separated text"
+msgstr "Texto separado por tabs"
+
+#: quotes.module:196
+msgid "Fortune file"
+msgstr "Archivo de la fortuna"
+
+#: quotes.module:197
+#: quotes.module:211
+#: quotes.module:400
+#: quotes.module:418
+#: quotes.module:957
+msgid "Quotes"
+msgstr "Frases"
+
+#: quotes.module:215
+msgid "Quote"
+msgstr "Frase"
+
+#: quotes.module:216
+msgid "Author"
+msgstr "Autor"
+
+#: quotes.module:235
+msgid "Please enter a quote."
+msgstr "Por favor escriba una frase."
+
+#: quotes.module:240
+msgid "Please enter the quote data to import."
+msgstr "Por favor suministre un archivo de datos para importar."
+
+#: quotes.module:252
+#: quotes.module:933
+#: quotes.module:959
+#: quotes.module:1027
+#: quotes.module:1127
+msgid "Submit"
+msgstr "Enviar"
+
+#: quotes.module:267
+#, php-format
+msgid "Only the first %d quotes were imported."
+msgstr "Solo las primeras %d frases fueron importadas."
+
+#: quotes.module:281
+msgid "%type: added %title."
+msgstr "%type: agregado %title."
+
+#: quotes.module:281
+msgid "view"
+msgstr "vista"
+
+#: quotes.module:294
+msgid "1000 quotes imported. %remaining existing quotes remaining to be imported."
+msgstr "1000 frases importadas. Las restantes %remaining frases permanecen sin importar."
+
+#: quotes.module:307
+msgid "The quotes module has been upgraded from version %old to version %new. %count existing quotes were successfully imported."
+msgstr "El módulo de frases ha sido actualizado desde la versión %old a la versión %new. Las %count frases existentes fueron importadas exitósamente."
+
+#: quotes.module:310
+#, php-format
+msgid "%count quotes imported."
+msgstr "%count frases importadas."
+
+#: quotes.module:353
+#: quotes.module:650
+msgid "%name's quotes"
+msgstr "frases de %name"
+
+#: quotes.module:369
+msgid "The quotes that will be imported are displayed below."
+msgstr "Las frases que serán importadas se muestran a continuación."
+
+#: quotes.module:370
+#, php-format
+msgid "%d quotes will be imported:"
+msgstr "%d frases serán importadas:"
+
+#: quotes.module:385
+msgid "View the latest quotes."
+msgstr "Ver las últimas frases."
+
+#: quotes.module:389
+#, php-format
+msgid "%username's quotes"
+msgstr "frases de %username"
+
+#: quotes.module:389
+#: quotes.module:400
+#, php-format
+msgid "View %username's quotes."
+msgstr "Ver frases célebres de %username."
+
+#: quotes.module:400
+msgid "History"
+msgstr "Historia"
+
+#: quotes.module:400
+#, php-format
+msgid "view %user's quotes"
+msgstr "ver frases célebres de %user"
+
+#: quotes.module:442
+msgid "A quote is a famous, humorous, witty, infamous, or otherwise noteworthy quotation or fortune file entry. Quotes can be entered one at a time or mass imported in either tab-separated text or fortune file format."
+msgstr "Una frase célebre es un pequeño párrafo famoso, homorístico, infame, o en otro caso significativamente importante. Las frases pueden escribire una a una o importarse masivamente desde textos separado por tabs o archivos de la fortuna."
+
+#: quotes.module:445
+msgid "Use the form below to enter a single quote. Multiple quotes can also be %link in either tab-separted text or fortune file format."
+msgstr "Use este formulario para escribir una sola frase. Múltiples frases pueden importarse desde %link en textos separados por tabs o formato de archivo de la fortuna."
+
+#: quotes.module:445
+msgid "mass imported"
+msgstr "masivamente importado"
+
+#: quotes.module:448
+msgid ""
+"\n"
+"<p>\n"
+"  Use the form below to mass import quotes in either tab-separated\n"
+"  text or fortune file format. Many quotes will be imported in this\n"
+"  one step by creating an individual node for each imported quote. See\n"
+"  the notes below for more information.\n"
+"</p>\n"
+"<p><strong>Notes:</strong></p>\n"
+"<ul>\n"
+"  <li>\n"
+"    Tab-separated quotes should appear one quote per line in the\n"
+"    format <em><span style=\"color: blue;\">quote</span><span\n"
+"    style=\"color: red;\">&lt;tab&gt;</span><span style=\"color:\n"
+"    green;\">author</span></em>. The author is optional; however, the\n"
+"    tab is still required. To import quotes or authors with more than\n"
+"    one line, escape the embedded newlines with a backslash.\n"
+"    Examples:\n"
+"\n"
+"  <pre style=\"font-size: .75em;\">\n"
+"<span style=\"color: blue;\">Single-line quote.</span><em style=\"color: red;\">&lt;tab&gt;</em><span style=\"color: green;\">Author</span>\n"
+"<span style=\"color: blue;\">Quote without author.</span><em style=\"color: red;\">&lt;tab&gt;</em>\n"
+"<span style=\"color: blue;\">Multi-line quote: line 1...\\\n"
+"...line 2.</span><em style=\"color: red;\">&lt;tab&gt;</em><span style=\"color: green;\">Author line 1\\\n"
+"Author line 2</span>\n"
+"<span style=\"color: blue;\">Another quote.<em style=\"color: red;\">&lt;tab&gt;</em><span style=\"color: green;\">Another Author</span>\n"
+"  </pre>\n"
+"\n"
+"  </li>\n"
+"  <li>\n"
+"    Fortune files do not explicitly provide an author or attribution\n"
+"    for each quote/fortune. This import will extract an author when\n"
+"    there is a line of the form <em>-- Author</em> with any amount of\n"
+"    leading whitespace.  Examples:\n"
+"\n"
+"  <pre style=\"font-size: .75em;\">\n"
+"<span style=\"color: blue;\">A fortune without an author.</span>\n"
+"<em style=\"color: red;\">%</em>\n"
+"<span style=\"color: blue;\">Fortune with author.</span>\n"
+"--<span style=\"color: green;\">Author</span>\n"
+"<em style=\"color: red;\">%</em>\n"
+"<span style=\"color: blue;\">Multi-line fortune: line 1...\n"
+"...line 2.</span>\n"
+"          -- <span style=\"color: green;\">Author line 1\n"
+"             Author line 2</span>\n"
+"  </pre>\n"
+"\n"
+"  </li>\n"
+"  <li>\n"
+"    Any settings used in the form below (comment, moderation, sticky,\n"
+"    input format, categories, etc.) will be applied to all imported\n"
+"    quotes.\n"
+"  </li>\n"
+"  <li>\n"
+"    The title entered below will be applied to all quotes. You can use\n"
+"    the variable <em>%id</em> in the title which will be replaced by\n"
+"    the newly-created quote's node ID.\n"
+"  </li>\n"
+"  <li>\n"
+"    Fortune files and tab-separated text data can contain many\n"
+"    quotes. To avoid timeout errors while importing large amounts of\n"
+"    data, consider importing in smaller chunks with no more than 1000\n"
+"    quotes at a time.\n"
+"  </li>\n"
+"  <li>\n"
+"    If the path module is enabled, you cannot create a path alias\n"
+"    while importing, as the import will attempt to use the same path\n"
+"    for every quote.\n"
+"  </li>\n"
+"</ul>\n"
+msgstr ""
+
+#: quotes.module:520
+msgid ""
+"\n"
+"<p>\n"
+"  This page is designed to mass import your existing quotes from\n"
+"  Drupal 4.4 or earlier. Many quotes will be imported in this one step\n"
+"  by creating an individual node for each imported quote. See the\n"
+"  notes below for more information.\n"
+"</p>\n"
+"<p><strong>Notes:</strong></p>\n"
+"<ul>\n"
+"  <li>\n"
+"    The form below is designed to automatically import 1000 existing\n"
+"    quotes at a time. If you have more than 1000 existing quotes, you\n"
+"    will be returned to this page after each 1000-quote submission to\n"
+"    import the next batch.\n"
+"  </li>\n"
+"  <li>\n"
+"    The body field below shows the quotes that will be imported in a\n"
+"    tab-separated text format. You do not need to modify this\n"
+"    field. Performing a preview will display the quotes as they will\n"
+"    be imported.\n"
+"  </li>\n"
+"  <li>\n"
+"    Any settings used in the form below (comment, moderation, sticky,\n"
+"    input format, categories, etc.) will be applied to all upgraded\n"
+"    quotes.\n"
+"  </li>\n"
+"  <li>\n"
+"    The title entered below will be applied to all quotes. You can use\n"
+"    the variable <em>%id</em> in the title which will be replaced by\n"
+"    the newly-created quote's node ID.\n"
+"  </li>\n"
+"  <li>\n"
+"    If the path module is enabled, you cannot create a path alias\n"
+"    while importing, as the import will attempt to use the same path\n"
+"    for every quote.\n"
+"  </li>\n"
+"</ul>\n"
+msgstr ""
+
+#: quotes.module:560
+msgid "Allows users to maintain personal lists of quotations and display quotes in one or more blocks."
+msgstr "Le permite a los usuarios mantener una lista personal de frases célebres y mostrarlas en uno o mas bloques."
+
+#: quotes.module:563
+msgid "Displayed below is the status of the quotes module."
+msgstr "A continuación se muestra el estado del módulo de frases."
+
+#: quotes.module:566
+msgid ""
+"\n"
+"You can define any number of blocks that will each display either a\n"
+"randomly-selected quote or the most-recent quote. The quotes displayed\n"
+"in each block can be restricted to certain node IDs, roles, users, or\n"
+"categories. Each block has a name that is used only for identification\n"
+"on the %link and a title that is shown when the block is\n"
+"displayed. The block title can contain the variable <em>%title</em>\n"
+"which will be replaced by the selected quote's title.\n"
+msgstr ""
+
+#: quotes.module:574
+msgid "block administration page"
+msgstr "página de administración de bloques"
+
+#: quotes.module:577
+msgid "Use the form below to define a new quote block."
+msgstr "Use el siguiente formulario para definir un nuevo bloque de frases."
+
+#: quotes.module:579
+msgid ""
+"\n"
+"The quotes module allows users to maintain a list of quotations that\n"
+"they find notable, humorous, famous, infamous, or otherwise worthy of\n"
+"sharing with website visitors. The quotes can be displayed in any\n"
+"number of administrator-defined blocks. These blocks will display\n"
+"quotes based on the restrictions of each block. Blocks can be\n"
+"configured to restrict to certain nodes, roles, users, or categories.\n"
+msgstr ""
+"\n"
+"El módulo de frases célebres le permite a los usuarios mantener una lista de frases que\n"
+"pueden ser notables, humorísticas, famosas, infames o al menos interesantes para\n"
+"compartir con los visitantes del sitio web. Las frases pueden mostrarse en cualquer número de\n"
+"bloques definidos por el administrador. Estos bloques mostrarán\n"
+"las frases según criterios de restricción. Los bloques pueden ser\n"
+"configurados para que muestren frases en ciertos nodos, roles, usuarios o categorías.\n"
+
+#: quotes.module:634
+msgid "creation date"
+msgstr "fecha de creación"
+
+#: quotes.module:634
+msgid "title"
+msgstr "título"
+
+#: quotes.module:634
+msgid "author"
+msgstr "autor"
+
+#: quotes.module:635
+msgid "ascending"
+msgstr "ascendente"
+
+#: quotes.module:635
+msgid "descending"
+msgstr "descendente"
+
+#: quotes.module:660
+msgid "Sort by: "
+msgstr "Ordenar por:"
+
+#: quotes.module:663
+msgid "Quotes per page: "
+msgstr "Frases por página:"
+
+#: quotes.module:665
+msgid "Go"
+msgstr "Ir"
+
+#: quotes.module:667
+msgid "Display options"
+msgstr "Mostrar opciones"
+
+#: quotes.module:864
+#, php-format
+msgid "%user's quotes"
+msgstr "frases de %user"
+
+#: quotes.module:896
+#, php-format
+msgid "Parse error on quote %d."
+msgstr "Analice el error en la frase %d."
+
+#: quotes.module:916
+msgid "Please select a valid import format."
+msgstr "Por favor seleccione un formato válido de importación."
+
+#: quotes.module:927
+#: quotes.module:948
+msgid "Install"
+msgstr "Instalar"
+
+#: quotes.module:928
+#: quotes.module:944
+msgid "Upgrade"
+msgstr "Actualizar"
+
+#: quotes.module:935
+msgid "Settings successfully saved."
+msgstr "Opciones guardadas exitósamente."
+
+#: quotes.module:943
+msgid "<p>The quotes module must be upgraded to continue.  Press <em>Upgrade</em> to create the new database tables and import your existing quotes.</p>"
+msgstr "<p>El módulo de frases debe actualizarse para poder continuar.  Oprima <em>Actualziar</em> para crear las nuevas tablas en la base de datos e importar las frases existentes.</p>"
+
+#: quotes.module:947
+msgid "<p>The quotes module must be installed to continue.  Press <em>Install</em> to proceed</p>"
+msgstr "<p>El módulo de frases debe instalarse antes de continaur.  Oprima <em>Instalar</em> para proceder</p>"
+
+#: quotes.module:955
+msgid "Status"
+msgstr "Estado"
+
+#: quotes.module:955
+msgid "Installed"
+msgstr "Instalado"
+
+#: quotes.module:956
+msgid "Version"
+msgstr "Versión"
+
+#: quotes.module:958
+msgid "Author leader"
+msgstr "Indicador de Autoría"
+
+#: quotes.module:958
+msgid "The text placed before the author attribution (i.e. \"&amp;mdash;\" for an em-dash or \"&amp;#8226;\" for a bullet)."
+msgstr "El texto ubicado antes de la referencia del autor (por ejemplo: \"&amp;mdash;\" para una línea simple o \"&amp;#8226;\" para una viñeta)."
+
+#: quotes.module:969
+#: quotes.module:1014
+msgid "Save"
+msgstr "Guardar"
+
+#: quotes.module:972
+msgid "Please enter a name"
+msgstr "Por favor escriba un nombre"
+
+#: quotes.module:979
+msgid "Blocks successfully updated."
+msgstr "Bloque actualizado exitósamente."
+
+#: quotes.module:982
+#: quotes.module:1090
+msgid "Name"
+msgstr "Nombre"
+
+#: quotes.module:982
+msgid "Title"
+msgstr "Título"
+
+#: quotes.module:982
+msgid "Filters"
+msgstr "Filtros"
+
+#: quotes.module:982
+msgid "Operations"
+msgstr "Operaciones"
+
+#: quotes.module:990
+msgid "node"
+msgstr "nodo"
+
+#: quotes.module:994
+msgid "role"
+msgstr "rol"
+
+#: quotes.module:998
+msgid "user"
+msgstr "usuario"
+
+#: quotes.module:1002
+msgid "term"
+msgstr "término"
+
+#: quotes.module:1008
+msgid "none"
+msgstr "ninguno"
+
+#: quotes.module:1009
+msgid "configure"
+msgstr "configurar"
+
+#: quotes.module:1010
+msgid "delete"
+msgstr "borrar"
+
+#: quotes.module:1017
+msgid "No blocks are defined."
+msgstr "No se han definido bloques."
+
+#: quotes.module:1037
+msgid "Please enter a block name."
+msgstr "Por favor escriba un nombre para el bloque."
+
+#: quotes.module:1042
+msgid "Please enter valid node IDs."
+msgstr "Por favor solo escriba IDs de nodos válidos."
+
+#: quotes.module:1052
+msgid "Block <em>%name</em> successfully updated."
+msgstr "Bloque <em>%name</em> guardado exitósamente."
+
+#: quotes.module:1056
+msgid "Block <em>%name</em> could not be updated."
+msgstr "Bloque <em>%name</em>no pudo ser actualizado."
+
+#: quotes.module:1063
+msgid "Block <em>%name</em> successfully created."
+msgstr "Bloque <em>%name</em> creado exitósamente."
+
+#: quotes.module:1067
+msgid "Block <em>%name</em> could not be created."
+msgstr "Bloque <em>%name</em> no pudo ser creado."
+
+#: quotes.module:1087
+msgid "Anonymous"
+msgstr "Anónimo"
+
+#: quotes.module:1090
+msgid "Enter a unique name for this block. This will identify the block on the %link."
+msgstr "Escriba un nombre único para identificar este bloque. Este nombre identificará el bloque en la %link."
+
+#: quotes.module:1091
+msgid "Block title"
+msgstr "Título de Bloque"
+
+#: quotes.module:1091
+msgid "Enter the title that will be used for this block when displayed. If desired, you can include the string <em>%title</em> which will be replaced by the title of the quote being displayed in the block."
+msgstr "Escriba el título que será usado por este bloqe cuando se muestra. Si se desea, puede incluír la cadena <em>%title</em>, la cual será remplazada por el título de la frase mostrada en el bloque."
+
+#: quotes.module:1092
+msgid "Type"
+msgstr "Tipo"
+
+#: quotes.module:1092
+msgid "Random"
+msgstr "Aleatorio"
+
+#: quotes.module:1092
+msgid "Most recent"
+msgstr "Mas reciente"
+
+#: quotes.module:1093
+msgid "Node filter"
+msgstr "Filtro de nodo"
+
+#: quotes.module:1093
+msgid "To restrict this block to display only certain quotes based on node IDs, enter the IDs here separated by commas, spaces, or returns."
+msgstr "Para restringir este bloque solo a frases basadas en IDs de nodo, escriba los IDs separados por comas, espacios o saltos de línea aquí."
+
+#: quotes.module:1096
+#: quotes.module:1099
+msgid "Role filter"
+msgstr "Filtro de rol"
+
+#: quotes.module:1096
+msgid "To restrict this block to display only quotes submitted by users in specific roles, select the roles here."
+msgstr "Para restringir este bloque solo a frases enviadas por usuarios con roles específicos, seleccione los roles aquí."
+
+#: quotes.module:1099
+msgid "There are no roles configured with the <em>edit own quotes</em> permission, so no roles are available. To filter by role, please assign this permission to at least one role on the %link."
+msgstr "No hay roles configurados con el permiso <em>editar frases propias</em>, asi que no hay roles disponibles. Para filtrar por rol, por favor asigne este permiso a al menos un rol en la %link."
+
+#: quotes.module:1099
+msgid "permission administration page"
+msgstr "página de administración de permisos"
+
+#: quotes.module:1103
+#: quotes.module:1106
+msgid "User filter"
+msgstr "Filtro de usuario"
+
+#: quotes.module:1103
+msgid "To restrict this block to display only quotes submitted by specific users, select the users here."
+msgstr "Para restringir este bloque solo a frases enviadas por usuarios específicos, seleccione los usuarios aquí."
+
+#: quotes.module:1106
+msgid "There are no users with the <em>edit own quotes</em> permission, so no users are available. To filter by user, please assign at least one user to a role with this permission on the %link."
+msgstr "No hay usuarios en el permiso  <em>editar frases propias</em>, asi que no hay usuarios disponibles. Para filtrar por usuarios, por favor asigne al menos un usuario al rol con este permiso en la %link."
+
+#: quotes.module:1106
+msgid "user administration page"
+msgstr "página de administración de usuario"
+
+#: quotes.module:1120
+#: quotes.module:1123
+msgid "Category filter"
+msgstr "Filtro de categorías"
+
+#: quotes.module:1120
+msgid "To restrict this block to display only quotes in specific categories, select the categories here."
+msgstr "Para restringir este bloque para mostrar frases solo en una categoría específica, seleccione las categorías aquí."
+
+#: quotes.module:1123
+msgid "There are no vocabularies assigned to quotes. To filter by categories, please assign at least one vocabulary to quotes on the %link."
+msgstr "No hay vocabularios asignados a frases. Para filtrar por categorías, por favor asigne al menos un vocabulario a las frases en la %link."
+
+#: quotes.module:1123
+msgid "category administration page"
+msgstr "página de administración de categorías"
+
+#: quotes.module:1140
+#: quotes.module:1147
+msgid "Delete"
+msgstr "Borrar"
+
+#: quotes.module:1142
+msgid "Block <em>%name</em> deleted."
+msgstr "Bloque <em>%name</em> borrado."
+
+#: quotes.module:1146
+msgid "<p>Are you sure you want to delete the block <em>%name</em>?"
+msgstr "<p>Esta seguro que desea borrar el bloque <em>%name</em>?"
+

@@ -1,0 +1,27 @@
+HTMLArea Compatibity
+--------------------
+$Id: COMPATIBILITY.txt,v 1.1 2004/12/11 03:00:15 gordon Exp $
+
+Linux
+-----
+Firefox 1.0 - Yes
+Mozilla 1.7.3 - Yes
+Konqueror - No
+Opera 7.54 - No
+
+Mac
+---
+Firefox 1.0 - Yes
+Mozilla 1.7.3 - Yes
+Camino 0.82 - Yes with Patch - https://bugzilla.mozilla.org/show_bug.cgi?id=197253
+Safari 1.2.4 - No
+Internet Explorer for Mac 5.2.3 - No
+Omniweb 5.0.1 - No
+Opera 7.54 - No
+iCab 2.9.8 - No
+
+Windows
+-------
+Firefox 1.0 - Yes
+Mozilla 1.7.3 - Yes
+Internet Explorer 5.5 - Yes

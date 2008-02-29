@@ -1,0 +1,1966 @@
+<?php
+
+/**
+ * @file
+ * Defines a cck field type for inserting a subform that allows you to create associations between the current node and some other nodes of a specified type.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function subform_help($section) {
+  switch ($section) {
+    case 'admin/help#subform':
+      $output = t('This module provides a cck field type for inserting a subform that allows you to create associations between the current node and some other nodes of a specified type as well as inline create/read/update/delete child nodes.');
+      break;
+    case 'admin/modules#description':
+    
+      $missing_dependencies = array();
+    
+      if( !module_exist( "content" ) ) {
+        $missing_dependencies[] = "SUBFORM DEPENDENCY <b>CONTENT.MODULE</b> IS NOT ENABLED. DISABLING SUBFORM NOW.";
+      }
+      if( !module_exist( "views" ) ) {
+        $missing_dependencies[] = "SUBFORM DEPENDENCY <b>VIEWS.MODULE</b> IS NOT ENABLED. DISABLING SUBFORM NOW.";
+      }
+      if( !module_exist( "views_ui" ) ) {
+        $missing_dependencies[] = "SUBFORM DEPENDENCY <b>VIEWS_UI.MODULE</b> IS NOT ENABLED. DISABLING SUBFORM NOW.";
+      }
+      if( !module_exist( "content_type_reference" ) ) {
+        $missing_dependencies[] = "SUBFORM DEPENDENCY <b>CONTENT_TYPE_REFERENCE.MODULE</b> IS NOT ENABLED. DISABLING SUBFORM NOW.";
+      }
+      if( !module_exist( "persistent_fieldset" ) ) {
+        $missing_dependencies[] = "SUBFORM DEPENDENCY <b>PERSISTENT_FIELDSET.MODULE</b> IS NOT ENABLED. DISABLING SUBFORM NOW.";
+      }
+      
+      $javascript = "";
+      
+      $missing_dependencies_msg = implode( "<BR>", $missing_dependencies );
+      if( strlen( $missing_dependencies_msg ) > 0 ) {
+        $missing_dependencies_msg = $missing_dependencies_msg . "<BR>";
+        $javascript = "
+        <script>
+        
+        function block_subform_enable()
+        {
+          var my_checkbox = document.getElementById( 'edit-status-subform' );
+          my_checkbox.checked = false;
+          my_checkbox.disabled = true;
+          my_checkbox.style.visibility = 'hidden';
+        }
+        
+        setTimeout( block_subform_enable, 1 );
+        
+        </script>
+        ";
+      }
+      
+      
+      return $javascript . "<font color='red'><blink>" . $missing_dependencies_msg . "</blink></font>" .  t('<strong>CCK:</strong> Defines a cck field type for inserting a subform that allows you to create associations between the current node and some other nodes of a specified type. <em>Note: Requires content.module and content_type_reference.module.</em>');
+  }
+}
+
+/**
+ * Implementation of hook_field_info().
+ * hook_field_info(): Here you declare the label for your field type(s). This will show up when you click "add field" on a CCK content type. 
+ */
+function subform_field_info() {
+  return array(
+    'subform' => array('label' => 'Subform'),
+  );
+}
+
+
+/**
+ * Check if a table exists.
+ */
+function _subform_db_table_exists($table) {
+  return db_num_rows(db_query("SHOW TABLES LIKE '{" . db_escape_table($table) . "}'"));
+}
+
+
+/**
+ * Implementation of hook_field_settings().
+ * 
+ * this function returns an array that can either:
+ *  define form api info that will be asked of the user during field creation
+ *  list fields that will be saved
+ *    or
+ *  list columns that should be created in the database upon field creation completion
+ *  
+ *  hook_field_settings($op, $field): Handles displaying, validating, and saving field settings forms. In addition, manages how they're stored in the database and provides Views integration.
+ *     
+ */
+function subform_field_settings( $op, &$field ) {
+
+  // sd( "field settings " . $op );
+  // sds( "field", $field );
+
+  switch ($op)
+  {
+  
+    case 'form':
+      
+      return _subform_get_subform_field_settings_form( $op, &$field );
+
+    case 'save':
+      
+      views_invalidate_cache();
+      drupal_set_message( "Cleared views module cache to force new subform selection views to show up." );
+      
+      return array(
+              'relation_type_id', 'relation_direction', 'display_children',
+              'edit_children', 'add_new', 'delete_relation',
+              'reference_existing', 'confirm_delete', 'edit_after_submit',
+              'depth_limit'
+              );
+
+    case 'database columns':
+      return array();
+      
+  }
+  
+}
+
+/**
+ * Implementation of hook_field().
+ * hook_field($op, &$node, $field, &$node_field, $teaser, $page): Define the behavior of a field type. 
+ */
+function subform_field($op, &$node, $field, &$items, $teaser, $page) {
+
+  // sd( "<pre>hook_field subform " . $field['field_name'] . " in_subform = " . print_r( $node->in_subform, true ) . "</pre>" );
+  
+  
+  // we don't want to do anything if we're nested ||if they selected "NONE" as the relation
+  if( isset( $node->in_subform ) || $field['relation_type_id'] == -1 ) {
+    return;
+  }
+  
+  
+  $relation_def = _subform_get_relation_def( $field );
+  
+  
+  switch ($op) {
+  
+    case 'view':
+    
+      drupal_set_html_head(theme('stylesheet_import', base_path() . drupal_get_path('module', 'subform') .'/subform.css'));
+  
+      $output = "";
+      
+      // if children should be displayed, and its possible to have any children already
+      if( $field['display_children'] && $node->nid != NULL ) {
+        
+        $related_nids = _subform_get_child_nids( $field, $node->nid );
+        
+        $output .= "<fieldset class=\"subform-fieldset\">";
+        $output .= "<legend>" . $field['widget']['label'] . "</legend>";
+        $output .= _subform_view_nids_in_fieldset( $related_nids, $node, $field['relation_type_id'] );
+        $output .= "</fieldset>";
+      
+      }
+      
+      return $output;
+  }
+}
+
+/**
+ * Implementation of hook_field_formatter_info().
+ * hook_field_formatter_info(): Declare information about a formatter. 
+ */
+function subform_field_formatter_info() {
+  return array(
+    'default' => array(
+      'label' => 'Default',
+      'field types' => array('subform'),
+    ),
+    'plain' => array(
+      'label' => 'Plain text',
+      'field types' => array('subform'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_formatter().
+ * hook_field_formatter($field, $item, $formatter, $node): Prepare an individual item for viewing in a browser. 
+ */
+function subform_field_formatter($field, $item, $formatter, $field) {
+}
+
+/**
+ * Implementation of hook_widget_info().
+ * hook_widget_info(): Here you declare any widgets associated with your field type. These will show up below the fields when you click "add field" on a CCK content type. 
+ */
+function subform_widget_info() {
+  return array(
+    'subform_select' => array(
+      'label' => 'Subform',
+      'field types' => array('subform'),
+    )
+  );
+}
+
+/**
+ * Implementation of hook_widget().
+ * hook_widget: Define the behavior of a widget. 
+ */
+function subform_widget($op, &$node, $field, &$field_field) {
+
+  global $user;
+  global $view_select_prefs;
+  
+  $relation_def = _subform_get_relation_def( $field );
+  $parent_type = $relation_def['parent_type'];
+  $child_type = $relation_def['child_type'];
+  
+  
+  if( $field['relation_type_id'] == -1 ) {
+    sd( 'Subform ' . $field['widget']['label'] . ' is not associated with any relation.' );
+    return "";
+  }
+  if( $child_type == NULL ) {
+    sd( 'Subform ' . $field['widget']['label'] . ' was unable to calculate what type to display' );
+    return;
+  }
+  
+  
+  
+  switch ($op) {
+    case 'form':
+      drupal_set_html_head( theme('stylesheet_import', base_path() . drupal_get_path('module', 'subform') .'/subform.css') );
+      return _subform_get_widget_form( $node, $field, $relation_def, $parent_type, $child_type );
+    case 'submit':
+      _subform_widget_submit( $node, $field, $field_field, $relation_def, $child_type );
+      break;
+  }
+  
+}
+
+
+function subform_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  
+  // sd( "<pre>subform_nodeapi - $op</pre>" );
+      
+  // at this point, the nid of a new node is known
+  if( $op == "insert" ) {
+  
+    // if this new node was marked as being part of new relation definition(s)
+    if( isset( $node->effective_nids ) ) {
+    
+      foreach( $node->effective_nids as $effective_nid ) {
+      
+        // pull out its node id, and replace the temp relation id used in the relation records
+        _subform_fix_relations( $effective_nid, $node->nid );
+    
+        if( $node->subform_redirect == $effective_nid ) {
+          drupal_goto( "node/$node->nid/edit" );
+        }
+      }
+    }
+  }
+}
+
+function subform_views_default_views() {
+
+  $subform_list = db_query( "
+  
+/* ------------- SQL FORMATTER by Milk ------------- */
+
+SELECT
+	node_field.field_name, 
+	node_field_instance.type_name AS parent_type, 
+	global_settings
+FROM
+	node_field
+INNER JOIN
+	node_field_instance
+	ON
+		node_field.field_name = node_field_instance.field_name
+WHERE
+	TYPE = 'subform' 
+
+/* ------------- SQL FORMATTER by Milk ------------- */
+
+  ");
+  
+  while ( $obj = db_fetch_object( $subform_list ) ) {
+    
+    $field = unserialize( $obj->global_settings );
+    
+    // sd( "subform views hook, looking at subform record.<br><pre>" . print_r( $field, true ) . "</pre>" );
+    
+  
+    // if in subform config they selected "NONE" as the relation
+    if( $field['relation_type_id'] == -1 ) {
+      continue;
+    }
+    
+    
+    $relation_def = _subform_get_relation_def( $field );
+    $child_type = $relation_def['child_type'];
+    if( $child_type == NULL ) {
+      continue;
+    }
+    
+    
+    $view = new stdClass();
+    
+    $view->name = "subform_" . substr( $obj->field_name, 6, 128 );
+    $view->description = 'controls the select list for subform ' . $obj->field_name;
+    
+    $view->page = TRUE;
+    $view->url = "subform_" . substr( $obj->field_name, 6, 128 );
+    $view->page_type = 'table';
+    $view->use_pager = FALSE;
+    $view->nodes_per_page = '15';
+    
+    $view->field = array (
+      array (
+        'tablename' => 'subform_dummy',
+        'field' => 'dummy',
+        'label' => 'Reference',
+      ),
+      array (
+        'tablename' => 'node',
+        'field' => 'title',
+        'label' => 'Title',
+        'handler' => 'views_handler_field_nodelink',
+        'sortable' => '1',
+        'defaultsort' => 'ASC',
+        'options' => 'nolink',
+      ),
+    );
+    
+    $view->filter = array (
+      array (
+        'tablename' => 'node',
+        'field' => 'type',
+        'operator' => 'OR',
+        'options' => '',
+        'value' => array (
+          0 => "$child_type",
+        ),
+      ),
+    );
+    
+    $view->requires = array( node );
+    
+    $views[ $view->name ] = $view;
+    
+  }
+  
+  return $views;
+  
+}
+
+
+function subform_views_pre_view( &$view, &$items ) {
+  
+  global $view_select_prefs;
+  
+  if( $view_select_prefs == NULL ) {
+    return;
+  }
+  
+  $duplicate_nids = $view_select_prefs['duplicate_nids'];
+  $full_nodes = $view_select_prefs['full_nodes'];
+  $field = $view_select_prefs['field'];
+      
+  // loop through them
+  foreach( $items as $item_key => $item_value ) {
+  
+    $nid = $item_value->nid;
+    
+    // if deletion is not enabled, then don't give people an option to deselect a referenced node
+    if( ( $field['delete_relation'] == false ) && $duplicate_nids[ $nid ] ) {
+      unset( $items[ $item_key ] );
+      continue;
+    }
+    
+    // if a node is not referenced, but its cardinality is full
+    if( !$duplicate_nids[ $nid ] && $full_nodes[ $nid ] ) {
+      unset( $items[ $item_key ] );
+      continue;
+    }
+    
+    // if we want don't the user to see child nodes, then we probably also don't want them to see a list of all possible child nodes
+    if( $field['display_children'] == false ) {
+      unset( $items[ $item_key ] );
+      continue;
+    }
+    
+    // example
+    //   <input type="checkbox" name="edit[field_projects][subform][reference][52]" id="edit-field_projects-subform-reference-52" value="1"   class="form-checkbox" />
+    //   <input type="checkbox" name="edit[field_projects][subform][reference][52]" id="edit-field_projects-subform-reference-52" value="0"   class="form-checkbox" />
+    // example
+    //    edit-field_projects-subform-reference-44
+    
+    if( isset( $duplicate_nids[ $nid ] ) ) {
+      $checked = "checked";
+    }
+    else {
+      $checked = "";
+    }
+    
+    
+    drupal_add_js('modules/subform/subform.js');
+              
+    $items[ $item_key ]->subform_dummy_dummy = "<input name=\"dummy$nid\" type=\"checkbox\" " . $checked . " class=\"form-checkbox\" onClick=\" setValueOfLastHiddenInputEndingIn( this, '-reference-$nid', this.checked );\"/>";
+    
+  }
+  
+}
+
+function subform_handler_pass_through($fieldinfo, $fielddata, $value, $data) {
+  // sd( "<pre>" . print_r( $args, true ) . "</pre>" );
+  return $value;
+}
+
+function subform_views_tables() {
+
+  $table = array(
+    'name' => 'subform_dummy',
+    'join' => array(
+      'left' => array(
+        'table' => 'node',
+        'field' => 'nid',
+      ),
+      'right' => array(
+        'field' => 'nid',
+      ),
+    ),
+    
+    'fields' => array(
+      'dummy' => array(
+        'name' => 'dummy',
+        'sortable' => false,
+        'handler' => 'subform_handler_pass_through',
+        'option' => 'string',
+        'help' => 'this is a dummy field for subform to put checkboxes in, REQUIRED if you want your subform selection list to work',
+      ),
+    ),
+  );
+  
+  $tables[ $table['name'] ] = $table;
+  
+  return $tables;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function _subform_prefix_fields( &$node, $prefix ) {
+
+  foreach( $node as $key_name => $key_value ) {
+  
+    if( ( substr( $key_name, 0, 6 ) == "field_" ) || ( $key_name == "title" ) ) {
+      $temp = $node[$key_name];
+      unset( $node[$key_name] );
+      $new_key_name = $prefix . "_" . $key_name;
+      $node[$new_key_name] = $temp;
+    }
+    else if( is_array( $key_value ) ) {
+      _subform_prefix_fields( $key_value, $prefix );
+    }
+    
+  }
+  
+}
+
+function _subform_prefix( &$node, $prefix ) {
+
+  $keys_list = array_keys( $node );
+
+  foreach( $keys_list as $key_name ) {
+      
+    if( is_array( $node[ $key_name ] ) ) {
+  
+      // sd( "<pre>$key_name</pre>" );
+      
+      if( ( substr( $key_name, 0, 1 ) != "#" ) ) {
+      
+        $temp = $node[$key_name];
+        unset( $node[$key_name] );
+        $new_key_name = $prefix . "_" . $key_name;
+        $node[$new_key_name] = $temp;
+        
+        _subform_prefix( $node[$new_key_name], $prefix );
+      }
+      else {
+      
+        _subform_prefix( $node[$key_name], $prefix );
+      }
+      
+    }
+    elseif( $key_name == "#name" ) {
+    
+      unset( $node[$key_name] );
+    }
+    
+  }
+  
+}
+
+function _subform_unprefix( &$node, $prefix ) {
+
+  // sd( "<pre>_subform_unprefix( node, $prefix )</pre>" );
+
+  $keys_list = array_keys( $node );
+
+  foreach( $keys_list as $key_name ) {
+    
+    // sd( "<pre>_subform_unprefix() - $key_name</pre>" );
+  
+    if( substr( $key_name, 0, strlen( $prefix ) ) == $prefix ) {
+      $temp = $node[$key_name];
+      unset( $node[$key_name] );
+      $new_key_name = substr( $key_name, strlen( $prefix ) + 1, strlen( $key_name ) - strlen( $prefix ) - 1 );
+      $node[$new_key_name] = $temp;
+    }
+    else if( is_array( $node[$key_name] ) ) {
+      _subform_unprefix( $node[$key_name], $prefix );
+    }
+    
+  }
+  
+}
+
+function _subform_unprefix_fields( &$node, $prefix ) {
+
+  foreach( $node as $key_name => $key_value ) {
+  
+    if( substr( $key_name, 0, strlen( $prefix ) ) == $prefix ) {
+      $temp = $node[$key_name];
+      unset( $node[$key_name] );
+      $new_key_name = substr( $key_name, strlen( $prefix ), strlen( $key_name ) - strlen( $prefix ) );
+      $node[$new_key_name] = $temp;
+    }
+    else if( is_array( $key_value ) ) {
+      _subform_unprefix_fields( $key_value, $prefix );
+    }
+    
+  }
+  
+}
+
+function _subform_unrequire( &$array ) {
+
+  if( isset( $array['#required'] ) && $array['#required'] == 1 ) {
+    $array['#required'] = 0;
+  }
+
+  foreach( $array as $key => $sub_array ) {
+        
+    if( is_array( $sub_array ) ) {
+      _subform_unrequire( $array[$key] );
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function _subform_fix_relations( $temp_id, $node_id ) {
+
+  if( $temp_id >= 0 ) {
+  
+    // this can't be right
+    return;
+  }
+  else {
+  
+    db_query( "UPDATE
+                `node_relation_instances`
+              SET
+                `node_one` = $node_id
+              WHERE `node_one` = $temp_id");
+  
+    db_query( "UPDATE
+                `node_relation_instances`
+              SET
+                `node_two` = $node_id
+              WHERE `node_two` = $temp_id");
+              
+  }
+}
+
+
+
+function _subform_get_relations() {
+                                          
+  $relationsResult = db_query('SELECT
+                              	`node_content_relation_type`.`nid`, `field_type_one_cn`, `field_type_two_cn`, `title`
+                              FROM
+                              	`node_content_relation_type` INNER JOIN `node` ON `node_content_relation_type`.`vid` = `node`.`vid`
+                              WHERE
+                                `node_content_relation_type`.`vid`
+                                  IN (
+                                    SELECT MAX( vid ) AS vid
+                                    FROM `node_content_relation_type`
+                                    GROUP BY nid
+                                    );');
+  while ($obj = db_fetch_object( $relationsResult )) {
+    $relationsList[ $obj->nid ] = $obj->title . "  (" .  $obj->field_type_one_cn ." <-> " . $obj->field_type_two_cn . ")";
+  }
+  return $relationsList;
+  
+}
+
+function _subform_get_child_nids( &$field, $node_id  ) {
+  
+  // sd( "<pre>" . print_r( $field, true ) . "</pre>" );
+  
+  if( $field['relation_direction'] == "left" ) {
+    $parent_side = "node_two";
+    $child_side = "node_one";
+  }
+  else {
+    $parent_side = "node_one";
+    $child_side = "node_two";
+  }
+  
+  $query = "
+              SELECT
+              	`node_relation_instances`.`$child_side` as nid
+              FROM
+              	`node_relation_instances` INNER JOIN node ON `node_relation_instances`.`$child_side` = node.nid
+              WHERE
+                `node_relation_instances`.`type` = " . $field['relation_type_id'] . "
+                  AND
+                `node_relation_instances`.`$parent_side` = $node_id";
+  
+  // sd( "<pre>$query</pre>" );
+  
+  $related_results = db_query( $query );
+  
+  $related_nids = array();
+  while ($obj = db_fetch_object( $related_results )) {
+    $related_nids[] = $obj->nid;
+  }
+  return $related_nids;
+  
+}
+
+function _subform_get_nids_of_type( $child_type  ) {
+  
+  $big_query_string = "
+
+/* ------------- SQL FORMATTER by Milk ------------- */
+
+SELECT
+	nid
+FROM
+	node
+WHERE
+	type = \"$child_type\" 
+	AND 
+		vid IN (
+      		
+      SELECT
+      	MAX(
+      			 vid 
+      		) AS vid
+      FROM
+      	node
+      GROUP BY
+      	nid 
+      	)
+
+/* ------------- SQL FORMATTER by Milk ------------- */
+
+
+                                ";
+
+  // sd( "<pre>" . print_r( $big_query_string, true ) . "</pre>" );
+          
+  $results = db_query( $big_query_string );
+          
+  while ($obj = db_fetch_object( $results )) {
+    $nids[] = $obj->nid;
+  }
+  return $nids;
+  
+}
+
+function _subform_get_full_nids_of_type( &$field, &$relation_def ) {
+
+  
+  if( $field['relation_direction'] == "left" ) {
+    $child_side = "node_one";
+  }
+  else {
+    $child_side = "node_two";
+  }
+  
+  $sql_query = "
+  
+    SELECT
+      $child_side as nid, count( $child_side ) as count
+    FROM
+      ( SELECT * FROM node_relation_instances WHERE type = " . $field['relation_type_id'] . " ) nri
+    GROUP BY
+      $child_side
+    HAVING
+      count >= " . $relation_def['parent_type_cardinality'] . "
+      
+  ";
+  
+  // sd( $sql_query );
+  
+  $full_nodes_result = db_query( $sql_query );
+  
+  
+  $full_nodes = array();
+  while ( $obj = db_fetch_object( $full_nodes_result ) ) {
+    $full_nodes[ $obj->nid ] = true;
+  }
+  
+  return $full_nodes;
+  
+}
+
+function _subform_get_duplicate_relation_targets( $my_node_id, $relation_type_id ) {
+  
+  if( $my_node_id == NULL ) {
+    return;
+  }
+  
+  $duplicate_id_results = db_query("
+  SELECT
+    (node_one + node_two - $my_node_id) as other_id
+  FROM
+    node_relation_instances
+  WHERE
+    (
+      ( node_one = $my_node_id )
+        OR
+      ( node_two = $my_node_id )
+    )
+      AND
+    ( type = $relation_type_id )
+  ");
+  
+  $duplicate_ids = array();
+  while ( $obj = db_fetch_object( $duplicate_id_results ) ) {
+    $duplicate_ids[ $obj->other_id ] = true;
+  }
+  
+  return $duplicate_ids;
+  
+}
+
+function _subform_relate_nids( $parent_node, $child_node, &$field, &$relation_def ) {
+  
+  if( !( is_numeric( $parent_node ) ) || !( is_numeric( $child_node ) ) || !( is_numeric( $field['relation_type_id'] ) ) ) {
+    return;
+  }
+  
+  
+  if( $field['relation_direction'] == "left" ) {
+    $parent_side = "node_two";
+    $child_side = "node_one";
+    $child_direction = 'left';
+    $parent_direction = 'right';
+  }
+  else {
+    $parent_side = "node_one";
+    $child_side = "node_two";
+    $child_direction = 'right';
+    $parent_direction = 'left';
+  }
+  
+  
+  // don't allow new relation creation if it would violate a cardinality rule
+  if( _subform_get_remaining_cardinality( $field['relation_type_id'], $child_direction, $relation_def['child_type_cardinality'], $parent_node ) <= 0 ) {
+    return;
+  }
+  if( _subform_get_remaining_cardinality( $field['relation_type_id'], $parent_direction, $relation_def['parent_type_cardinality'], $child_node ) <= 0 ) {
+    return;
+  }
+  
+  
+  $duplicate_check = db_query("
+  SELECT
+    id
+  FROM
+    node_relation_instances
+  WHERE
+    ( $parent_side = $parent_node AND $child_side = $child_node )
+      AND
+    ( type = " . $field['relation_type_id'] . " )
+  ");
+  
+  
+  $dupe_found = false;
+  while ( $obj = db_fetch_object( $duplicate_check ) ) {
+    $dupe_found = true;
+    break;
+  }
+  
+  if( !$dupe_found ) {
+    db_query("
+      /* ------------- SQL FORMATTER by Milk ------------- */
+      
+      INSERT
+      	INTO `node_relation_instances` (
+      		 `$parent_side`, 
+      	`$child_side`, 
+      		`type` 
+      	) VALUES (
+      		 $parent_node, 
+      	$child_node, 
+      		" . $field['relation_type_id'] . " 
+      	) 
+      
+      /* ------------- SQL FORMATTER by Milk ------------- */
+      
+      ");
+  }
+  
+}
+
+function _subform_unrelate_nids( $parent_node, $child_node, &$field, &$relation_def ) {
+  
+  if( ( $parent_node == NULL ) || ( $child_node == NULL ) || ( $field['relation_type_id'] == NULL ) ) {
+    return;
+  }
+  
+  if( $field['relation_direction'] == "left" ) {
+    $parent_side = "node_two";
+    $child_side = "node_one";
+  }
+  else {
+    $parent_side = "node_one";
+    $child_side = "node_two";
+  }
+  
+  $relatedResults = db_query("
+                  DELETE FROM
+                    `node_relation_instances`
+                  WHERE
+                    `$parent_side` = $parent_node
+                      AND
+                    `$child_side` = $child_node
+                      AND
+                    `type` = " . $field['relation_type_id'] . "
+                    ");
+  
+}
+
+function _subform_get_remaining_cardinality( $relation_id, $relation_direction, $type_cardinality, $node_id ) {
+  
+  if( $node_id != NULL ) {
+    
+    // sd( "<pre>$node_id</pre>" );
+    
+    if( $relation_direction == "left" ) {
+      $parent_side = "node_two";
+      $child_side = "node_one";
+    }
+    else {
+      $parent_side = "node_one";
+      $child_side = "node_two";
+    }
+    
+    $related_count = db_query("
+                            SELECT
+                              count( $child_side ) as count
+                            FROM
+                              node_relation_instances
+                            WHERE
+                              $parent_side = $node_id
+                                AND
+                              type = $relation_id
+                                AND
+                              $child_side IN ( SELECT node.nid FROM node )
+                              ");
+                              
+    while ( $obj = db_fetch_object( $related_count ) ) {
+      $count = $obj->count;
+      break;
+    }
+  }
+  else {
+    $count = 0;
+  }
+  
+  // sd( "<pre>$count</pre>" );
+  // sd( "<pre>" . $relation_def['child_type_cardinality'] . "</pre>" );
+  
+  return $type_cardinality - $count;
+  
+}
+
+function _subform_get_relation_def( &$field ) {
+  
+  if( $field['relation_type_id'] == NULL ) {
+    return;
+  }
+  
+  // sd( "<pre>" . print_r( $field, true ) . "</pre>" );
+    
+  $relations = db_query("
+  
+/* ------------- SQL FORMATTER by Milk ------------- */
+
+SELECT
+	*
+FROM
+	node_content_relation_type
+WHERE
+	nid = " . $field['relation_type_id'] . " 
+	AND 
+		vid IN (
+		
+SELECT
+	MAX(
+			 vid 
+		) AS vid
+FROM
+	node_content_relation_type
+WHERE
+	nid = " . $field['relation_type_id'] . "
+	) 
+
+/* ------------- SQL FORMATTER by Milk ------------- */
+
+  ");
+  
+  if( $field['relation_direction'] == "left" ) {
+    $parent_side = "field_type_two_cn";
+    $parent_side_cardinality = "field_type_two_cardinality_value";
+    $child_side = "field_type_one_cn";
+    $child_side_cardinality = "field_type_one_cardinality_value";
+  }
+  else {
+    $parent_side = "field_type_one_cn";
+    $parent_side_cardinality = "field_type_one_cardinality_value";
+    $child_side = "field_type_two_cn";
+    $child_side_cardinality = "field_type_two_cardinality_value";
+  }
+  
+  while ( $obj = db_fetch_object( $relations ) ) {
+    $relation_def = array(
+      'id' => $obj->nid,
+      'parent_type' => $obj->$parent_side,
+      'parent_type_cardinality' => $obj->$parent_side_cardinality,
+      'child_type' => $obj->$child_side,
+      'child_type_cardinality' => $obj->$child_side_cardinality,
+      'type_one' => $obj->field_type_one_cn,
+      'type_two' => $obj->field_type_two_cn,
+    );
+    break;
+  }
+  
+  // sd( "<pre>" . print_r( $relation_def, true ) . "</pre>" );
+  
+  return $relation_def;
+  
+}
+
+function _subform_view_nids_in_fieldset( $nids, &$parent_node, $relation_id ) {
+
+  $output = "";
+
+  // if there are some related records
+  if( is_array( $nids ) ) {
+  
+    // loop through them
+    foreach( $nids as $nid ) {
+      
+      // get it
+      $node = node_load( $nid );
+      // $node->in_subform = $parent_node->in_subform . " " . $relation_id;
+      
+      // render it
+      $output .= _subform_view_nid_in_fieldset( $node, $parent_node, $relation_id );
+
+    }
+  }
+  
+  return $output;
+}
+
+function _subform_view_nid_in_fieldset( &$node, &$parent_node, $relation_id ) {
+
+  $output = "";
+
+  // render it
+  $output .= "<fieldset class=\"collapsible\">";
+  // $output .= "<legend>" . $node->title . "</legend>";
+  $node->in_subform = ( isset( $parent_node->in_subform ) ? $parent_node->in_subform . " " : "" ) . $relation_id;
+  $output .= node_view( $node );
+  $output .= "</fieldset>";
+  
+  return $output;
+  
+}
+
+function sds( $name, &$structure ) {
+  $debug = debug_backtrace();
+  drupal_set_message( "<pre>" . $debug[1]['line'] . ":" . $debug[0]['line'] . ": $name = " . print_r( $structure, true ) . "</pre>" );
+}
+
+function sd( $name ) {
+  $debug = debug_backtrace();
+  drupal_set_message( $debug[1]['line'] . ":" . $debug[0]['line'] . ": " . $name );
+}
+
+function _subform_form_push_parent( $nid ) {
+  global $subform_form_parent_stack;
+  if( $subform_form_parent_stack == NULL ) { $subform_form_parent_stack = array(); }
+  array_push( $subform_form_parent_stack, $nid );
+  // sd( "form push parent, " . implode( ", ", $subform_form_parent_stack ) );
+}
+
+// assuming we've already pushed ourself onto the stack, pass 0 otherwise
+function _subform_form_get_parent( $depth = 1 ) {
+  global $subform_form_parent_stack;
+  if( $subform_form_parent_stack == NULL ) { $subform_form_parent_stack = array(); }
+  $index = sizeof( $subform_form_parent_stack ) - 1 - $depth;
+  if( $index >= 0 ) {
+    return $subform_form_parent_stack[ $index ];
+  }
+  else {
+    return NULL;
+  }
+}
+
+function _subform_form_pop_parent() {
+  global $subform_form_parent_stack;
+  if( $subform_form_parent_stack == NULL ) { $subform_form_parent_stack = array(); }
+  // sd( "form pop parent, " . implode( ", ", $subform_form_parent_stack ) );
+  return array_pop( $subform_form_parent_stack );
+}
+
+// assuming we've already pushed ourself onto the stack
+function _subform_form_get_depth() {
+  global $subform_form_parent_stack;
+  if( $subform_form_parent_stack == NULL ) { $subform_form_parent_stack = array(); }
+  return sizeof( $subform_form_parent_stack );
+}
+
+// assuming we've already pushed ourself onto the stack
+function _subform_get_do_parents_loop() {
+
+  global $subform_form_parent_stack;
+  if( $subform_form_parent_stack == NULL ) { $subform_form_parent_stack = array(); }
+  
+  foreach( $subform_form_parent_stack as $parent ) {
+    
+    // sd( "form loop check: $parent" );
+    
+    if( isset( $parent_seen[ $parent ] ) ) {
+      // sd( "detected two of the same parent" );
+      // the only time its ok that there's a loop, is if its just a 2 spot loop at the end of the chain
+      if( ( _subform_form_get_parent(0) == _subform_form_get_parent(1) ) && ( _subform_form_get_parent(1) != _subform_form_get_parent(2) ) ) {
+        continue;
+      }
+      return true;
+    }
+    else {
+      $parent_seen[ $parent ] = 1;
+    }
+    
+  }
+  
+  return false;
+}
+
+
+function _subform_relation_push_parent( $nid ) {
+  global $subform_relation_parent_stack;
+  if( $subform_relation_parent_stack == NULL ) { $subform_relation_parent_stack = array(); }
+  array_push( $subform_relation_parent_stack, $nid );
+  // sd( "relation push parent, " . implode( ", ", $subform_relation_parent_stack ) );
+}
+
+// assuming we've already pushed ourself onto the stack, pass 0 otherwise
+function _subform_relation_get_parent( $depth = 1 ) {
+  global $subform_relation_parent_stack;
+  if( $subform_relation_parent_stack == NULL ) { $subform_relation_parent_stack = array(); }
+  return $subform_relation_parent_stack[ sizeof( $subform_relation_parent_stack ) - 1 - $depth ];
+}
+
+function _subform_relation_pop_parent() {
+  global $subform_relation_parent_stack;
+  if( $subform_relation_parent_stack == NULL ) { $subform_relation_parent_stack = array(); }
+  // sd( "relation pop parent, " . implode( ", ", $subform_relation_parent_stack ) );
+  return array_pop( $subform_relation_parent_stack );
+}
+
+// assuming we've already pushed ourself onto the stack
+function _subform_get_do_relations_loop() {
+
+  global $subform_relation_parent_stack;
+  if( $subform_relation_parent_stack == NULL ) { $subform_relation_parent_stack = array(); }
+  
+  foreach( $subform_relation_parent_stack as $parent ) {
+    
+    // sd( "relation loop check: $parent" );
+    
+    if( isset( $parent_seen[ $parent ] ) ) {
+      // sd( "detected two of the same relation parent" );
+      return true;
+    }
+    else {
+      $parent_seen[ $parent ] = 1;
+    }
+    
+  }
+  
+  return false;
+}
+
+
+function _subform_submit_push_parent( $nid ) {
+  global $subform_submit_parent_stack;
+  if( $subform_submit_parent_stack == NULL ) { $subform_submit_parent_stack = array(); }
+  array_push( $subform_submit_parent_stack, $nid );
+  // sd( "submit push parent, " . implode( ", ", $subform_submit_parent_stack ) );
+}
+
+function _subform_submit_get_parent( $depth = 1 ) {
+  global $subform_submit_parent_stack;
+  if( $subform_submit_parent_stack == NULL ) { $subform_submit_parent_stack = array(); }
+  
+  $index = sizeof( $subform_submit_parent_stack ) - 1 - $depth;
+  if( $index >= 0 ) {
+    return $subform_submit_parent_stack[ $index ];
+  }
+  else {
+    return NULL;
+  }
+}
+
+function _subform_submit_pop_parent() {
+  global $subform_submit_parent_stack;
+  if( $subform_submit_parent_stack == NULL ) { $subform_submit_parent_stack = array(); }
+  // sd( "submit pop parent, " . implode( ", ", $subform_submit_parent_stack ) );
+  return array_pop( $subform_submit_parent_stack );
+}
+
+
+function _subform_get_widget_form( &$node, &$field, &$relation_def, $parent_type, $child_type ) {
+
+  global $user;
+  global $current_view;
+  global $view_select_prefs;
+
+
+  if( $field['relation_type_id'] == -1 ) {
+    sd( 'Subform ' . $field['widget']['label'] . ' is not associated with any relation.' );
+    return "";
+  }
+  if( $child_type == NULL ) {
+    sd( 'Subform ' . $field['widget']['label'] . ' was unable to calculate what type to display' );
+    return;
+  }
+  
+  
+  $form = array();
+    
+  // if we don't yet know the parent node id
+  if( ! isset( $node->nid) ) {
+    $effective_nid = rand( -100000, -1 );
+    $node->effective_nids[] = $effective_nid;
+  }
+  else {
+    $effective_nid = $node->nid;
+  }
+  
+  $null_param = NULL;
+  
+  if( $field['depth_limit'] == NULL ) {
+    $field['depth_limit'] = 2;
+  }
+  
+  
+  _subform_form_push_parent( $effective_nid );
+  _subform_relation_push_parent( $field['relation_type_id'] );
+  
+  // if we're out of our depth
+  if( ( _subform_form_get_parent( $field['depth_limit'] ) != NULL ) ) {
+    _subform_relation_pop_parent( );
+    _subform_form_pop_parent( );
+    return array();
+  }
+  // if continuing would be an infinite loop
+  if( _subform_get_do_parents_loop() || _subform_get_do_relations_loop() ) {
+    _subform_relation_pop_parent( );
+    _subform_form_pop_parent( );
+    return array();
+  }
+  // if our grand parent is "new"
+  if( is_numeric( _subform_form_get_parent(0) ) && ( _subform_form_get_parent(0) < 0 ) && ( _subform_form_get_parent(1) != NULL ) ) {
+    _subform_relation_pop_parent( );
+    _subform_form_pop_parent( );
+    return array();
+  }
+  
+  
+  if( $field['edit_after_submit'] ) {
+    // if we're the top of the display tree
+    if( _subform_form_get_depth() == 1 ) {
+      $node->subform_redirect = $effective_nid;
+    }
+  }
+  
+  // this fieldset wraps all children
+  $form[ $field['field_name'] ] = array('#tree' => TRUE);
+  $new_fieldset = array(
+    '#attributes' => array( 'class' => 'subform-fieldset' ),
+    '#type' => 'persistent_fieldset',
+    '#title' => $field['widget']['label'],
+    '#collapsible' => 1,
+    '#collapsed' => !( _subform_form_get_parent() == NULL ),
+    '#weight' => $field['widget']['weight'],
+    '#description' => $field['widget']['description'],
+  );
+  
+  $operations = NULL;
+  
+  if( $user->uid == 1 ) {
+    // if you selected the wrong relation direction, then this link will point to the wrong place
+    $operations[] = l( "Edit Subform Definition", "admin/node/types/$parent_type/fields/" . $field['field_name'], array( 'class' => 'subform-operation' ) );
+    $operations[] = l( "Edit Parent Type: $parent_type", "admin/node/types/$parent_type", array( 'class' => 'subform-operation' ) );
+    $operations[] = l( "Edit Child Type: $child_type", "admin/node/types/$child_type", array( 'class' => 'subform-operation' ) );
+  }
+  
+  if( $operations ) {
+    $new_fieldset['operations'] = array(
+      '#type' => 'markup',
+      '#value' =>"<div class=\"form-item\">" . implode(" - ", $operations ) . "</div>",
+      '#weight' => -1000,
+    );
+  }
+  
+  
+  $form[ $field['field_name'] ]['subform'] = $new_fieldset;
+  
+  
+  if( $field['edit_after_submit'] && isset( $node->nid ) ) {
+    $form[ '#redirect' ] = "node/" . $node->nid . "/" . 'edit';
+  }
+  
+  // only put one hidden op field in the page
+  if( _subform_form_get_parent() == NULL ) {
+    $form[ 'form_post_type' ] = array(
+      '#type' => "markup",
+      '#value' => "<input type='hidden' name='op' id='op'>",
+    );
+  }
+  
+  // if children should be displayed, and its possible to have any children already
+  if( $field['display_children'] && isset( $node->nid ) ) {
+    
+    $related_nids = _subform_get_child_nids( $field, $node->nid );
+    
+    // if there are some related records
+    if( is_array( $related_nids ) ) {
+    
+      // loop through them
+      foreach( $related_nids as $related_nid ) {
+      
+        // and render them
+        $sub_node_form_array = node_load( $related_nid );
+        
+        if( !isset( $node->in_subform ) ) {
+          $sub_node_form_array->in_subform = $field['relation_type_id'];
+        }
+        else {
+          $sub_node_form_array->in_subform = $node->in_subform . " " . $field['relation_type_id'];
+        }
+        
+        
+        // fieldsets with no title, don't show up, so don't allow empty titles
+        if( strlen( $sub_node_form_array->title ) == 0 ) {
+          $temp_title = "Untitled";
+        }
+        else {
+          $temp_title = $sub_node_form_array->title;
+        }
+        
+        $new_fieldset = array(
+          '#type' => 'persistent_fieldset',
+          '#title' => $temp_title,
+          '#collapsible' => 1,
+          '#collapsed' => 1
+        );
+        
+        
+        /*
+        // temp "inline" attempt
+        if( _subform_get_remaining_cardinality( $field['relation_type_id'], $field['relation_direction'], $relation_def['child_type_cardinality'], $node->nid ) <= 0 ) {
+          unset( $new_fieldset['#title'] );
+          $new_fieldset['#collapsed'] = 0;
+          $new_fieldset['#collapsible'] = 0;
+        }
+        */
+        
+        
+        $operations = NULL;
+
+        $operations[] = "<a href=\"#save\" class='subform-operation' onclick=\"document.getElementById('op').value='Submit'; document.getElementById('node-form').submit(); return false;\"/>Save</a>";
+        
+        $operations[] = l( "Detailed Edit", "/node/$related_nid/edit", array( 'class' => 'subform-operation') );
+        
+        if( $field['delete_relation'] ) {
+          
+          // edit-field_projects-subform-37-delete_hidden
+          $new_fieldset['delete_hidden'] = array(
+            '#type' => 'hidden',
+            '#default_value' => "",
+          );
+          
+          drupal_add_js('modules/subform/subform.js');
+          
+          if( $field['confirm_delete'] ) {
+            $operations[] = "<a class='subform-operation' href=\"#delete\" onclick=\"if ( window.confirm('Really delete this item?') ) { document.getElementById('op').value='Submit'; setValueOfLastHiddenInputEndingIn( this, '-$related_nid-delete_hidden', true ); document.getElementById('node-form').submit(); } return false;\"/>Delete</a>";
+          }
+          else {
+            $operations[] = "<a class='subform-operation' href=\"#delete\" onclick=\"document.getElementById('op').value='Submit'; setValueOfLastHiddenInputEndingIn( this, '-$related_nid-delete_hidden', true ); document.getElementById('node-form').submit(); return false;\"/>Delete</a>";
+          }
+        }
+        
+        if( $operations ) {
+          $new_fieldset['operations'] = array(
+            '#type' => 'markup',
+            '#value' =>"<div class=\"form-item\">" . implode(" - ", $operations ) . "</div>",
+            '#weight' => -1000,
+          );
+        }
+        
+        if( $field['edit_children'] ) {
+        
+          $sub_node_form_array = content_form( $sub_node_form_array, $null_param );
+          $sub_node_form_array['title']['#weight'] = -100;
+          _subform_prefix_fields( $sub_node_form_array, "node_$related_nid" );
+          $new_fieldset = array_merge( $new_fieldset , $sub_node_form_array );
+        }
+        else {
+          
+          $new_fieldset['static_node_$related_nid'] = array(
+            '#type' => 'markup',
+            '#value' =>"<div class=\"form-item\">" . node_view( $sub_node_form_array ) . "</div>",
+          );
+        }
+        
+        $form[ $field[ 'field_name' ] ][ 'subform' ][ $related_nid . "" ] = $new_fieldset;
+        
+      }
+    }
+  
+  }
+  
+  // if children should be displayed, and its possible to have any children already
+  if( $field['reference_existing'] ) {
+    
+    if( isset( $child_type ) ) {
+      
+    
+      $duplicate_nids = _subform_get_duplicate_relation_targets( $node->nid, $field['relation_type_id'] );
+    
+      
+      if( !isset( $user->view_count ) ) {
+        $user->view_count = 0;
+      }
+      $user->view_count++;
+      
+      // if received some exposed filter data for this view, trick it into filtering itself
+      if( isset( $_SESSION['exposed_filters'] ) && is_array( $_SESSION['exposed_filters'][ $user->view_count ] ) ) {
+        // temporarily hide view exposed filter variables in the GET global var
+        // sd( "<pre>session exposed_filters = " . print_r( $_SESSION['exposed_filters'], true ) . "</pre>" );
+        $old_GET = $_GET;
+        $_GET = array_merge( $_GET, $_SESSION['exposed_filters'][ $user->view_count ] );
+        // sd( "<pre>get data = " . print_r( $_GET, true ) . "</pre>" );
+      }
+      
+    
+      // sd( "<pre>get data = " . print_r( $_GET, true ) . "</pre>" );
+      
+      $select_view = views_get_view( "subform_" . substr( $field['field_name'], 6, 128 ) );
+      
+      $exposed_filter_form = views_filters_form( $select_view );
+      //sd( "<pre>select_view = " . print_r( $select_view, true ) . "</pre>" );
+      //sd( "<pre>exposed_filter_form = " . print_r( $exposed_filter_form, true ) . "</pre>" );
+      // $exposed_filter_form['#title'] = 
+      unset( $exposed_filter_form['#method'] );
+      unset( $exposed_filter_form['#process'] );
+      unset( $exposed_filter_form['view'] );
+      unset( $exposed_filter_form['submit'] );
+      unset( $exposed_filter_form['q'] );
+      
+      $filter_entries = 1;
+      foreach( $exposed_filter_form as $key => $value ) {
+        $filter_entries++;
+        if( ( $filter_entries % 2 ) == 0 ) {
+          // sd( "<pre>$filter_entries</pre>" );
+          // sd( "<pre>" . ( $filter_entries / 2 - 1 ) . "</pre>" );
+          $exposed_filter_form[ $key ][ '#title' ] = $select_view->exposed_filter[ ( $filter_entries / 2 - 1 ) . "" ][ 'label' ];
+        }
+      }
+      // sd( "<pre>exposed_filter_form = " . print_r( $exposed_filter_form, true ) . "</pre>" );
+      
+      // sd( "<pre>get data = " . print_r( $select_view, true ) . "</pre>" );
+      
+      // remove the exposed filter
+      // $select_view->exposed_filter = array();
+      
+      $view_select_prefs['duplicate_nids'] = $duplicate_nids;
+      $view_select_prefs['field'] = $field;
+      $view_select_prefs['full_nodes'] = _subform_get_full_nids_of_type( $field, $relation_def );
+      
+      // sds( "full nodes", $view_select_prefs['full_nodes'] );
+      
+      _subform_prefix( $exposed_filter_form, $user->view_count . "" );
+      // sd( "<pre>exposed_filter_form = " . print_r( $exposed_filter_form, true ) . "</pre>" );
+      
+      $compiled_view = views_build_view('embed', $select_view, $current_view->args, $user->view_count, $select_view->nodes_per_page );
+      
+      // if there are exposed filters
+      if( sizeof( $select_view->exposed_filter ) > 0 ) {
+        // this compiled view contains html describing a exposed filter area, we don't want that
+        // remove it
+        $table_start = strpos( $compiled_view, "<table>" );
+        $table_end = strpos( $compiled_view, "</table>" ) + strlen( "</table>" );
+        $compiled_view = substr( $compiled_view, 0, $table_start ) . substr( $compiled_view, $table_end, strlen( $compiled_view ) - $table_end );
+        // $compiled_view = preg_replace( "/<table[^>]*>(.*?)<\/table>/", " ", $compiled_view );
+        // $compiled_view = eregi_replace( "<table>(.*)</table>", " ", $compiled_view );
+      }
+      
+      // $test_string = "<table>blah</table>after table";
+      // $test_string = eregi_replace( "<table>(.*)</table>", " ", $test_string );
+      // $test_string = "<table>blah</table>after table</table>";
+      // $test_string = preg_replace("/<table\b[^>]*>(.*?)<\/table>/", " ", $test_string );
+       
+      // sd( "<pre>$test_string</pre>" );
+      
+      // sd( "<pre>" . print_r( views_build_view('items', $select_view, $current_view->args, FALSE, $select_view->nodes_per_page ) ) . "</pre>" );
+      $view_select_prefs = NULL;
+      
+      // if received some exposed filter data for this view, trick the it into filtering itself
+      if( isset( $_SESSION['exposed_filters'] ) && is_array( $_SESSION['exposed_filters'][ $user->view_count ] ) ) {
+        $_GET = $old_GET;
+      }
+      
+      
+      // only show the selection fieldset, if there will be some options to select
+      if( $compiled_view != NULL ) {
+        
+        $operations = NULL;
+        
+        $operations[] = "<a href=\"#save\" class='subform-operation' onclick=\"document.getElementById('op').value='Submit'; document.getElementById('node-form').submit(); return false;\"/>Save</a>";
+        
+        if( $user->uid == 1 ) {
+          $operations[] = l( "Edit Selection List", _subform_view_edit_path_for( $field ), array( 'class' => 'subform-operation' ) );
+        }
+        
+        $reference_fieldset = array(
+          '#attributes' => array( 'class' => 'subform-fieldset-select' ),
+          '#type' => 'persistent_fieldset',
+          '#title' => "Select",
+          '#collapsible' => 1,
+          '#collapsed' => 1,
+          '#weight' => 50,
+          'view' => array(
+            '#type' => "markup",
+            '#value' => $compiled_view,
+          ),
+        );
+        
+        if( $operations ) {
+          $reference_fieldset['operations'] = array(
+            '#type' => "markup",
+            '#value' => "<div>" . implode(" - ", $operations) . "</div>",
+            '#weight' => 100,
+          );
+        }
+  
+        // if cardinality is not one or many, then display the limit
+        if( $relation_def['child_type_cardinality'] != 999999 ) {
+          $reference_fieldset['#description'] = "Limit " . $relation_def['child_type_cardinality'];
+        }
+        
+        // if our view has an exposed filter
+        if( sizeof( $select_view->exposed_filter ) > 0 ) {
+          $exposed_filter_fieldset = array(
+            '#type' => 'persistent_fieldset',
+            '#title' => "Filter",
+            '#collapsible' => 1,
+            '#collapsed' => 0,
+            '#weight' => -50,
+            'apply_link' => array(
+              '#type' => 'markup',
+              '#value' => "<div><a href=\"#apply\" onclick=\"document.getElementById('op').value='Submit'; document.getElementById('node-form').submit(); return false;\"/>Apply</a></div>",
+              '#weight' => 50,
+            ),
+          );
+          $exposed_filter_fieldset = array_merge( $exposed_filter_fieldset , $exposed_filter_form );
+          $reference_fieldset[ 'exposed_filter_' . $user->uid . '_' . $user->view_count ] = $exposed_filter_fieldset;
+        }
+        
+        
+        $nids = _subform_get_nids_of_type( $child_type );
+        // loop through them
+        foreach( $nids as $nid ) {
+          
+          // if deletion is not enabled, then don't give people an option to deselect a referenced node
+          if( ( $field['delete_relation'] == false ) && $duplicate_nids[ $nid ] ) {
+            continue;
+          }
+          
+          // if we don't the user to see child nodes, then we probably also don't want them to see a list of all possible child nodes
+          if( $field['display_children'] == false ) {
+            continue;
+          }
+          
+          $reference_fieldset[ $nid . "" ] = array(
+            '#type' => 'hidden',
+            '#default_value' => ( $duplicate_nids[ $nid ] == 1 ),
+          );
+        
+          // sd( "making hidden $nid" );
+          
+        }
+        
+        
+        $form[ $field[ 'field_name' ] ][ 'subform' ][ 'reference' ] = $reference_fieldset;
+        
+      }
+      
+    }
+    else {
+      
+      sd( 'subform was unable to calculate what type to display' );
+      return;
+      
+    }
+  
+  }
+  
+  
+  // if this subform is allowed to add new child nodes
+  if( $field['add_new'] && _subform_get_remaining_cardinality( $field['relation_type_id'], $field['relation_direction'], $relation_def['child_type_cardinality'], isset( $node->nid ) ? $node->nid : NULL ) > 0 ) {
+    
+    // provide an area to create new nodes
+    
+    // ask the system for the forms api array for this content type
+    $sub_node_form_array = (object)array( 'uid' => $user->uid, 'name' => $user->name, 'type' => $child_type );
+    if( isset( $node->in_subform ) ) {
+      $sub_node_form_array->in_subform = $node->in_subform . " " . $field['relation_type_id'];
+    }
+    else {
+      $sub_node_form_array->in_subform = $field['relation_type_id'];
+    }
+    $sub_node_form_array = content_form( $sub_node_form_array, $null_param, $null_param, $null_param );
+    $sub_node_form_array['title']['#weight'] = -100;
+    
+    // don't require any fields in the "add new" area, otherwise regular form submission gets jacked
+    _subform_unrequire( $sub_node_form_array );
+    
+    $new_fieldset = array(
+      '#type' => 'persistent_fieldset',
+      '#title' => $relation_def['child_type_cardinality'] == 1 ? "Fill Out" : "New",
+      '#collapsible' => 1,
+      '#collapsed' => 1,
+      '#weight' => 100,
+      '#description' => isset( $sub_node_form_array['description'] ) ? $sub_node_form_array['description'] : ""
+    );
+    
+    
+    drupal_add_js('modules/subform/subform.js');
+    
+    // edit-field_projects-subform-37-create_new
+    $new_fieldset['create_new'] = array(
+      '#type' => 'hidden',
+      '#default_value' => false,
+    );
+    $new_fieldset['create_new_link'] = array(
+      '#type' => 'markup',
+      '#value' => "<div class=\"form-item\"><a href=\"#create\" class='subform-operation' onclick=\"document.getElementById('op').value='Submit'; setValueOfLastHiddenInputEndingIn( this, '-new-create_new', true ); document.getElementById('node-form').submit(); return false;\"/>Create</a></div>",
+      '#weight' => -1000,
+    );
+    
+          
+    _subform_prefix_fields( $sub_node_form_array, "node_new" );
+    
+    $new_fieldset = array_merge( $new_fieldset , $sub_node_form_array );
+    $new_fieldset['#attributes'] = array( 'class' => 'subform-fieldset-new' );
+    $form[ $field[ 'field_name' ] ][ 'subform' ][ "new" ] = $new_fieldset;
+
+  }
+
+  _subform_relation_pop_parent( );
+  _subform_form_pop_parent( );
+  
+  return $form;
+
+}
+
+function _subform_widget_submit( &$node, &$field, &$field_field, &$relation_def, $child_type ) {
+
+  // sds( "submit tree", debug_backtrace() );
+  // sds( "field_field", $field_field );
+  
+  // if there is no data to save, then this branch was trimmed by an infinite loop check or nesting limit
+  if( !isset( $field_field['subform'] ) ) {
+    // don't do anything with the blank data
+    return;
+  }
+      
+  $duplicate_nids = _subform_get_duplicate_relation_targets( $node->nid, $field['relation_type_id'] );
+  
+  // if we don't yet know the parent node id
+  if( $node->nid == NULL ) {
+  
+    // use some temporary negative value, that we will later replace in hook_node_api
+    $effective_nid = rand( -100000, -1 );
+    // if( ! is_array( $node->effective_nids ) ) {
+      $node->effective_nids[] = $effective_nid;
+    
+    if( $field['edit_after_submit'] ) {
+      $node->subform_redirect = $effective_nid;
+    }
+    
+  }
+  else {
+  
+    // otherwise, use it
+    $effective_nid = $node->nid;
+  }
+
+
+
+//   if( _subform_submit_get_parent(0) != NULL ) {
+//     sd( "i'm submitting $effective_nid inside of " . _subform_submit_get_parent(0) );
+//   }
+  _subform_submit_push_parent( $effective_nid );
+  if( _subform_submit_get_parent( 3 ) != NULL ) {
+    _subform_submit_pop_parent( );
+    // sd( "submit is too nested" );
+    return;
+  }
+  
+  
+  
+  foreach( $field_field['subform'] as $node_key => $node_value )
+  {
+    
+    
+    // if its possible for users to try to reference existing potential children
+    if( $field['reference_existing'] ) {
+    
+      // if we're looking at the reference sub array
+      if( $node_key == "reference" )
+      {
+    
+        // sd( "<pre>" . print_r( $node_value, true ) . "</pre>" );
+      
+        // do all deletions before all adds, so that we don't prematurely hit a cardinality limit
+        
+        
+      
+        // look at each entry
+        foreach( $node_value as $node_id => $node_reference_status ) {
+        
+          // if the node is an exposed filter set
+          if( !is_numeric( $node_id ) ) {
+          
+            // calculate the view/pager ID
+            $view_count = explode( "_", $node_id );
+            $view_count = $view_count[3];
+            
+            unset( $node_reference_status['submit'] );
+            
+            _subform_unprefix( $node_reference_status, $view_count );
+            
+            $_SESSION['exposed_filters'][ $view_count ] = array_merge( $_SESSION['exposed_filters'][ $view_count ], $node_reference_status );
+            
+            // sd( "<pre>exposed filter post = " . print_r( $node_reference_status, true ) . "</pre>" );
+            // sd( "<pre>session exposed filter data = " . print_r( $_SESSION['exposed_filters'][ $view_count ], true ) . "</pre>" );
+            continue;
+          }
+        
+          // and if its not marked
+          elseif( !( $node_reference_status && $node_reference_status != "false" ) )  {
+            // and it was already marked
+            if( $duplicate_nids[ $node_id ] ) {
+              // dereference to it
+              _subform_unrelate_nids( $effective_nid, $node_id, $field, $relation_def );
+            }
+          }
+        }
+      
+        // look at each entry
+        foreach( $node_value as $node_id => $node_reference_status ) {
+          // and if they've marked it
+          if( $node_reference_status && $node_reference_status != "false" ) {
+            // and it wasn't already marked
+            if( ! $duplicate_nids[ $node_id ] ) {
+              // create a link to it
+              _subform_relate_nids( $effective_nid, $node_id, $field, $relation_def );
+            }
+          }
+        }
+        
+        continue;
+      }
+    }
+    
+    if( is_numeric( $node_key ) )
+    {
+      $node_value['nid'] = $node_key;
+    }
+    
+    _subform_unprefix_fields( $node_value, "node_$node_key" . "_" );
+    $node_to_prepare = (object)$node_value;
+    $node_to_prepare->in_subform = ( isset( $node->in_subform ) ? $node->in_subform . " " : "" ) . $field['relation_type_id'];
+    $node_to_prepare->type = $child_type;
+    
+        
+    _content_widget_invoke('validate', $node_to_prepare);
+    _content_widget_invoke('process form values', $node_to_prepare);
+    _content_widget_invoke('submit', $node_to_prepare);
+    _content_field_invoke_default('submit', $node_to_prepare);
+    
+    
+    if( is_numeric( $node_key ) ) {
+      // sds( "node_to_prepare", $node_to_prepare );
+    }
+      
+    
+    // ask the system to append node table data, like creation date, etc etc
+    node_form_array( $node_to_prepare );
+    
+    // if its possible for an update to occur
+    if( $field['display_children'] ) {
+    
+      // update old nodes
+      if( is_numeric( $node_key ) ) {
+      
+        // tell this node we've cobbled together, what its nid is, otherwise node_save won't update the existing copy
+        $node_to_prepare->nid = $node_key;
+        node_save( $node_to_prepare );
+      }
+    }
+    
+    // if its possible for creation to occur
+    if( $field['add_new'] ) {
+    
+      // and new node creation was requested
+      if( $node_value['create_new'] == true ) {
+      
+        node_save( $node_to_prepare );
+        _subform_relate_nids( $effective_nid, $node_to_prepare->nid, $field, $relation_def );
+      }
+    }
+    
+    // if its possible for deletion to be requested
+    if( $field['display_children'] ) {
+    
+      // if deletion was requested
+      if( isset( $node_value['delete_hidden'] ) && $node_value['delete_hidden'] == true ) {
+      
+        // any deletion power, requires an unlinking
+        if( $field['delete_relation'] ) {
+          _subform_unrelate_nids( $node->nid, $node_to_prepare->nid, $field, $relation_def );
+        }
+      }
+    }
+    
+  }
+  
+  
+  _subform_submit_pop_parent();
+  
+}
+
+
+function _subform_get_parent_for( $subform_field_name ) {
+
+  $query = "SELECT type_name FROM node_field_instance WHERE field_name = '$subform_field_name'";
+
+  $found_parents = 0;
+  $parents = db_query( $query );
+  while ( $obj = db_fetch_object( $parents ) ) {
+    $found_parents++;
+    $found_parent = $obj->type_name;
+  }
+  
+  if( $found_parents == 1 ) {
+    return $found_parent;
+  }
+  else {
+    return "";
+  }
+
+}
+
+function _subform_view_edit_path_for( $field ) {
+
+  $found_view = -1;
+  // make it easy to configure the selection list
+  $view_records = db_query( "SELECT vid, name FROM view_view WHERE name = 'subform_" . substr( $field['field_name'], 6, 128 ) . "'" );
+  while ( $obj = db_fetch_object( $view_records ) ) {
+    $found_view = $obj->vid;
+    break;
+  }
+  
+  if( $found_view > -1 ) {
+    return "admin/views/edit/$found_view";
+  }
+  else {
+    return "admin/views/add/subform_" . substr( $field['field_name'], 6, 128 );
+  }
+
+}
+
+function _subform_get_subform_field_settings_form( $op, &$field ) {
+      
+  $relation_options = _subform_get_relations();
+  
+  $form = array();
+  
+  $javascript = "
+    <script>
+    
+    function block_meaningless_changes()
+    {
+      var r = document.getElementById( 'edit-required' );
+      r.disabled = true;
+      r.style.visibility = 'hidden';
+      
+      var m = document.getElementById( 'edit-multiple' );
+      m.disabled = true;
+      m.style.visibility = 'hidden';
+    }
+    
+    setTimeout( block_meaningless_changes, 1 );
+    
+    </script>
+    ";
+  
+  $form['disable_required_multiple'] = array(
+    '#type' => 'markup',
+    '#value' => $javascript,
+  );
+  
+  $form['relation_type_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Relation to show.'),
+    '#required' => TRUE,
+    '#default_value' => isset( $field['relation_type_id'] ) ? $field['relation_type_id'] : NULL,
+    '#description' => l( "Create a relation", 'node/add/content_relation_type' ),
+  );
+  
+  if( sizeof( $relation_options ) > 0 ) {
+    $form['relation_type_id']['#options'] = $relation_options;
+    $form['relation_type_id']['#options']['-1'] = "None";
+  }
+  else {
+    $form['relation_type_id']['#options'] = array( '-1' => "THERE ARE NO DEFINED RELATIONS" );
+  }
+  
+  
+  $form['relation_direction'] = array(
+    '#type' => 'select',
+    '#title' => t('Type to show.'),
+    '#required' => TRUE,
+    '#default_value' => isset( $field['relation_direction'] ) ? $field['relation_direction'] : 'left',
+    '#options' => array( 'left' => 'left', 'right' => 'right' ),
+  );
+  
+  
+  $form['display_children'] = _subform_get_checkbox( 'Display Children.', isset( $field['display_children'] ) ? $field['display_children'] : true, '<hr>' );
+  $form['edit_children'] = _subform_get_checkbox( 'Allow Node Edits.', isset( $field['edit_children'] ) ? $field['edit_children'] : true );
+  $form['add_new'] = _subform_get_checkbox( 'Allow New Node Additions.', isset( $field['add_new'] ) ? $field['add_new'] : true );
+  $form['delete_relation'] = _subform_get_checkbox( 'Allow Reference Deletions.', isset( $field['delete_relation'] ) ? $field['delete_relation'] : true );
+  $form['confirm_delete'] = _subform_get_checkbox( 'Prompt to Confirm Deletes.', isset( $field['confirm_delete'] ) ? $field['confirm_delete'] : true );
+  $form['reference_existing'] = _subform_get_checkbox( 'Allow Reference Additions.', isset( $field['reference_existing'] ) ? $field['reference_existing'] : true, '<hr>' );
+
+  
+  
+  // immediately afte a clean install, if views has not been used, then there will be no view_view table, but we won't fall for that silliness
+  if( _subform_db_table_exists( "view_view" ) ) {
+    
+    $customize_link_text = "Customize reference list. (If you have selected a new relation type or direction in this window, save these changes before using this link, otherwise this link will point you at a stale view definition)";
+    $form['reference_existing']['#description'] = l( $customize_link_text, _subform_view_edit_path_for( $field ) );
+    
+  }
+  else {
+    sd( "While querying for the list of views (so that I can provide you with a drink link to the view that defines the selection list for this buform), I've discovered that there is no view_view table. Either you do not have views installed OR you have not yet used your views install. If you do have views installed, <a href=''>click this link</a> to give views an opportunity to create its private tables." );
+  }
+  
+  
+  $form['edit_after_submit'] = _subform_get_checkbox( 'Continue editing after changes. (normal drupal behavior is to view a node after any saved change)', isset( $field['edit_after_submit'] ) ? $field['edit_after_submit'] : true );
+
+
+  $form['depth_limit'] = array(
+    '#type' => 'select',
+    '#title' => t('Prevent nesting of this subform beyond X depth.'),
+    '#required' => true,
+    '#default_value' => isset( $field['depth_limit'] ) ? $field['depth_limit'] : 3,
+    '#options' => array( 1, 2, 3, 4, 5, 6, 7 ),
+  );
+  
+  return $form;
+  
+}
+
+function _subform_get_checkbox( $title, $default_value, $suffix = NULL ) {
+
+  return array(
+      '#type' => 'checkbox',
+      '#title' => t( $title ),
+      '#default_value' => $default_value,
+      '#suffix' => $suffix,
+    );
+    
+}

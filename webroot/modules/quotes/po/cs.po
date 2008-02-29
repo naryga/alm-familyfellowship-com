@@ -1,0 +1,582 @@
+# LANGUAGE translation of Drupal (quotes.module)
+# Copyright 2006 Jiří Pavlík <pavlik@herme.net>
+
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2005-01-25 13:30+0200\n"
+"PO-Revision-Date: 2006-07-30 15:35+0100\n"
+"Last-Translator: Jiri Pavlik <pavlik@herme.net>\n"
+"Language-Team: Czech\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
+"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: quotes.module:77;91;108;149;352;385;872;0
+msgid "quotes"
+msgstr "citáty"
+
+#: quotes.module:81
+msgid "add"
+msgstr "přidat"
+
+#: quotes.module:86
+msgid "import"
+msgstr "importovat"
+
+#: quotes.module:97
+msgid "RSS feed"
+msgstr "RSS zdroj"
+
+#: quotes.module:103
+msgid "my quotes"
+msgstr "mé citáty"
+
+#: quotes.module:113
+msgid "overview"
+msgstr "souhrnný pohled"
+
+#: quotes.module:119
+msgid "configure blocks"
+msgstr "nastavení bloků"
+
+#: quotes.module:124
+msgid "add block"
+msgstr "přidat blok"
+
+#: quotes.module:130
+msgid "configure quote block"
+msgstr "nastavit blok citátů"
+
+#: quotes.module:135
+msgid "delete quote block"
+msgstr "smazat blok citátů"
+
+#: quotes.module:145
+msgid "upgrade"
+msgstr "aktualizovat"
+
+#: quotes.module:161
+msgid "quote"
+msgstr "citát"
+
+#: quotes.module:191
+msgid "Display in quote blocks"
+msgstr "Zobrazovat v bloku citátů"
+
+#: quotes.module:196
+msgid "Format"
+msgstr "Formát"
+
+#: quotes.module:196
+msgid "Tab-separated text"
+msgstr "Text ve formátu TSV (tab-separated)"
+
+#: quotes.module:196
+msgid "Fortune file"
+msgstr "Fortune file"
+
+#: quotes.module:197;211;400;418;957
+msgid "Quotes"
+msgstr "Citáty"
+
+#: quotes.module:215
+msgid "Quote"
+msgstr "Citát"
+
+#: quotes.module:216
+msgid "Author"
+msgstr "Autor"
+
+#: quotes.module:235
+msgid "Please enter a quote."
+msgstr "Vložte citát"
+
+#: quotes.module:240
+msgid "Please enter the quote data to import."
+msgstr "Vložte data citátů určená k importu."
+
+#: quotes.module:252;933;959;1027;1127
+msgid "Submit"
+msgstr "Odeslat"
+
+#: quotes.module:267
+msgid "Only the first %d quotes were imported."
+msgstr "Bylo importováno pouze prvních %d citátů."
+
+#: quotes.module:281
+msgid "%type: added %title."
+msgstr "%type: přidáno %title."
+
+#: quotes.module:281
+msgid "view"
+msgstr "náhled"
+
+#: quotes.module:294
+msgid "1000 quotes imported. %remaining existing quotes remaining to be imported."
+msgstr "Importováno 1000 citátů. Zbývá importovat %remaining dalších citátů."
+
+#: quotes.module:307
+msgid "The quotes module has been upgraded from version %old to version %new. %count existing quotes were successfully imported."
+msgstr "Modul quotes byl aktualizován z verze %old na verzi %new. Bylo úspěšně importováno %count existujících citátů."
+
+#: quotes.module:310
+msgid "%count quotes imported."
+msgstr "Bylo importováno %count citátů."
+
+#: quotes.module:353;650
+msgid "%name's quotes"
+msgstr "Citáty, které vložil %name"
+
+#: quotes.module:369
+msgid "The quotes that will be imported are displayed below."
+msgstr "Citáty, které budou importovány, jsou zobrazeny níže."
+
+#: quotes.module:370
+msgid "%d quotes will be imported:"
+msgstr "Bude importováno %count citátů."
+
+#: quotes.module:385
+msgid "View the latest quotes."
+msgstr "Prohlížet poslední citáty."
+
+#: quotes.module:389
+msgid "%username's quotes"
+msgstr "Citáty, které vložil %username"
+
+#: quotes.module:389;400
+msgid "View %username's quotes."
+msgstr "Prohlížet citáty, které vložil %username."
+
+#: quotes.module:400
+msgid "History"
+msgstr "Historie"
+
+#: quotes.module:400
+msgid "view %user's quotes"
+msgstr "prohlížet citáty, které vložil %user"
+
+#: quotes.module:442
+msgid "A quote is a famous, humorous, witty, infamous, or otherwise noteworthy quotation or fortune file entry. Quotes can be entered one at a time or mass imported in either tab-separated text or fortune file format."
+msgstr "Citát je slavný, humorný, moudrý nebo jinak pozoruhodný výrok. Citáty je možno vkládat postupně, nebo hromadně importovat v textovém formátu TSV (tab-separated) nebo ve formátu \"fortune file\"."
+
+#: quotes.module:445
+msgid "Use the form below to enter a single quote. Multiple quotes can also be %link in either tab-separted text or fortune file format."
+msgstr "Pro vložení jednotlivého citátu použijte tento formulář. Citáty lze vložit také hromadně %link, a to buď v textovém souboru děleném tabelátory, nebo ve formátu \"fortune file\"."
+
+#: quotes.module:445
+msgid "mass imported"
+msgstr "importováno hromadně"
+
+#: quotes.module:520
+msgid ""
+"\n"
+"<p>\n"
+"  This page is designed to mass import your existing quotes from\n"
+"  Drupal 4.4 or earlier. Many quotes will be imported in this one step\n"
+"  by creating an individual node for each imported quote. See the\n"
+"  notes below for more information.\n"
+"</p>\n"
+"<p><strong>Notes:</strong></p>\n"
+"<ul>\n"
+"  <li>\n"
+"    The form below is designed to automatically import 1000 existing\n"
+"    quotes at a time. If you have more than 1000 existing quotes, you\n"
+"    will be returned to this page after each 1000-quote submission to\n"
+"    import the next batch.\n"
+"  </li>\n"
+"  <li>\n"
+"    The body field below shows the quotes that will be imported in a\n"
+"    tab-separated text format. You do not need to modify this\n"
+"    field. Performing a preview will display the quotes as they will\n"
+"    be imported.\n"
+"  </li>\n"
+"  <li>\n"
+"    Any settings used in the form below (comment, moderation, sticky,\n"
+"    input format, categories, etc.) will be applied to all upgraded\n"
+"    quotes.\n"
+"  </li>\n"
+"  <li>\n"
+"    The title entered below will be applied to all quotes. You can use\n"
+"    the variable <em>%id</em> in the title which will be replaced by\n"
+"    the newly-created quote's node ID.\n"
+"  </li>\n"
+"  <li>\n"
+"    If the path module is enabled, you cannot create a path alias\n"
+"    while importing, as the import will attempt to use the same path\n"
+"    for every quote.\n"
+"  </li>\n"
+"</ul>\n"
+msgstr ""
+"\n"
+"<p>\n"
+"  Tato stránka je určena k hromadnému importu vašich citátů z Drupalu\n"
+"  verze 4.4 nebo starší. V tomto kroku se importuje soubor více citátů,\n"
+"  přičemž se pro každý importovaný citát vytvoří zvláštní uzel. Více\n"
+"  informací najdete v následujících poznámkách.\n"
+"</p>\n"
+"<p><strong>Poznámky:</strong></p>\n"
+"<ul>\n"
+"  <li>\n"
+"    Následující formulář je určen k automatickému importu 1000 existujících\n"
+"    citátů najednou. Máte-li citátů více než 1000, budete po odeslání každého\n"
+"    1000 citátů vráceni zpět na tuto stránku pro importování další dávky.\n"
+"  </li>\n"
+"  <li>\n"
+"    V níže zobrazeném poli se ukazují citáty, které budou importovány ve formátu\n"
+"    TSV (tab-separated). Toto pole se <strong>nesmí upravovat</strong>. Jak budou\n"
+"    citáty importovány se nechejte zobrazit v náhledu.\n"
+"  </li>\n"
+"  <li>\n"
+"    Všechna nastavení použitá v níže zobrazeném poli (komentář, moderování, formát\n"
+"    vstupu, kategorie, atd.) se aplikují na všechny aktualizované citáty.\n"
+"  </li>\n"
+"  <li>\n"
+"    Nadpis zadaný níže se použije pro všechny citáty. V nadpisu můžete použít\n"
+"    proměnnou <em>%id</em>, která se při vytváření nového citátu nahradí ID\n uzlu.\n"
+"  </li>\n"
+"  <li>\n"
+"    Je-li zapnut modul \"path\", nelze vytvářet alias cesty při importu, protože\n"
+"    systém by se snažil použít tutéž cestu pro všechny importované citáty.\n"
+"  </li>\n"
+"</ul>\n"
+
+#: quotes.module:560
+#: quotes.module:563
+msgid "Displayed below is the status of the quotes module."
+msgstr "Níže je zobrazen stav modulu citáty."
+
+#: quotes.module:566
+msgid ""
+"\n"
+"You can define any number of blocks that will each display either a\n"
+"randomly-selected quote or the most-recent quote. The quotes displayed\n"
+"in each block can be restricted to certain node IDs, roles, users, or\n"
+"categories. Each block has a name that is used only for identification\n"
+"on the %link and a title that is shown when the block is\n"
+"displayed. The block title can contain the variable <em>%title</em>\n"
+"which will be replaced by the selected quote's title.\n"
+msgstr ""
+"\n"
+"Můžete určit libovolný počet bloků a každý z nich bude zobrazovat buď náhodně\n"
+"vybraný, nebo nejnovější citát. Citáty zobrazované v každém bloku lze vymezit\n"
+"podle ID uzlu, rolí, uživatelů či kategorií. Každý blok má jméno, které se\n"
+"používá pouze pro identifikaci na %link, a nadpis, který se zobrazuje v záhlaví\n"
+"bloku. Nadpis bloku může obsahovat proměnnou <em>%title</em>, která se nahradí\n"
+"nadpisem zobrazovaného citátu.\n"
+
+#: quotes.module:574
+msgid "block administration page"
+msgstr "administrace bloků"
+
+#: quotes.module:577
+msgid "Use the form below to define a new quote block."
+msgstr "Pro založení nového bloku použijte následující formulář."
+
+#: quotes.module:579
+msgid ""
+"\n"
+"The quotes module allows users to maintain a list of quotations that\n"
+"they find notable, humorous, famous, infamous, or otherwise worthy of\n"
+"sharing with website visitors. The quotes can be displayed in any\n"
+"number of administrator-defined blocks. These blocks will display\n"
+"quotes based on the restrictions of each block. Blocks can be\n"
+"configured to restrict to certain nodes, roles, users, or categories.\n"
+msgstr ""
+"\n"
+"Modul citátů umožňuje uživatelům udržovat seznam citací, které pokládají\n"
+"za pozoruhodné, humorné, moudré nebo jinak zajímavé a chtějí se o ně\n"
+"podělit s návštěvníky stránek. Citáty se mohou zobrazovat v libovolném\n"
+"počtu bloků založených administrátorem. Tyto bloky zobrazují citáty\n"
+"vymezené pro každý blok filtrem. Pro bloky se může nastavit omezení na\n"
+"určité uzly, role, uživatele či kategorie.\n"
+
+#: quotes.module:634
+msgid "creation date"
+msgstr "datum vytvoření"
+
+#: quotes.module:634
+msgid "title"
+msgstr "nadpis"
+
+#: quotes.module:634
+msgid "author"
+msgstr "autor"
+
+#: quotes.module:635
+msgid "ascending"
+msgstr "vzestupně"
+
+#: quotes.module:635
+msgid "descending"
+msgstr "sestupně"
+
+#: quotes.module:660
+msgid "Sort by: "
+msgstr "Řadit podle: "
+
+#: quotes.module:663
+msgid "Quotes per page: "
+msgstr "Citátů na stránku: "
+
+#: quotes.module:665
+msgid "Go"
+msgstr "Jdi"
+
+#: quotes.module:667
+msgid "Display options"
+msgstr "Zobrazit možnosti"
+
+#: quotes.module:864
+msgid "%user's quotes"
+msgstr "citáty, které poslal %user"
+
+#: quotes.module:896
+msgid "Parse error on quote %d."
+msgstr "Chybná syntax v citátu %d."
+
+#: quotes.module:916
+msgid "Please select a valid import format."
+msgstr "Vyberte prosím platný formát importu."
+
+#: quotes.module:927;948
+msgid "Install"
+msgstr "Instalovat"
+
+#: quotes.module:928;944
+msgid "Upgrade"
+msgstr "Aktualizovat"
+
+#: quotes.module:935
+msgid "Settings successfully saved."
+msgstr "Nastavení bylo uloženo."
+
+#: quotes.module:943
+msgid "<p>The quotes module must be upgraded to continue.  Press <em>Upgrade</em> to create the new database tables and import your existing quotes.</p>"
+msgstr "<p>Aby bylo možno pokračovat, musí se modul citátů aktualizovat.  Stiskněte <em>Aktualizovat</em>, aby se vytvořily v databázi nové tabulky a byly naimportovány vaše citáty.</p>"
+
+#: quotes.module:947
+msgid "<p>The quotes module must be installed to continue.  Press <em>Install</em> to proceed</p>"
+msgstr "<p>Aby bylo možno pokračovat, musí se modul citátů nainstalovat. Stiskněte proto tlačítko <em>Instalovat</em>.</p>"
+
+#: quotes.module:955
+msgid "Status"
+msgstr "Stav"
+
+#: quotes.module:955
+msgid "Installed"
+msgid_plural "Installed"
+msgstr[0] "Instalován"
+msgstr[1] "Instalovány"
+msgstr[2] "Instalováno"
+
+#: quotes.module:956
+msgid "Version"
+msgstr "Verze"
+
+#: quotes.module:958
+msgid "Author leader"
+msgstr "Hlavní autor"
+
+#: quotes.module:958
+msgid "The text placed before the author attribution (i.e. \"&amp;mdash;\" for an em-dash or \"&amp;8226;\" for a bullet)."
+msgstr "Symbol umístěný před určením autora (\"&amp;mdash;\" znamená pomlčku, \"&amp;8226;\" znamená puntík)."
+
+#: quotes.module:969;1014
+msgid "Save"
+msgstr "Uložit"
+
+#: quotes.module:972
+msgid "Please enter a name"
+msgstr "Vložte prosím jméno."
+
+#: quotes.module:979
+msgid "Blocks successfully updated."
+msgstr "Bloky byly úspěšně aktualizovány."
+
+#: quotes.module:982;1090
+msgid "Name"
+msgstr "Jméno"
+
+#: quotes.module:982
+msgid "Title"
+msgstr "Nadpis"
+
+#: quotes.module:982
+msgid "Filters"
+msgstr "Filtry"
+
+#: quotes.module:982
+msgid "Operations"
+msgstr "Operace"
+
+#: quotes.module:990
+msgid "node"
+msgstr "uzel"
+
+#: quotes.module:994
+msgid "role"
+msgstr "role"
+
+#: quotes.module:998
+msgid "user"
+msgstr "uživatel"
+
+#: quotes.module:1002
+msgid "term"
+msgstr "termín"
+
+#: quotes.module:1008
+msgid "none"
+msgstr "žádný"
+
+#: quotes.module:1009
+msgid "configure"
+msgstr "nastavit"
+
+#: quotes.module:1010
+msgid "delete"
+msgstr "smazat"
+
+#: quotes.module:1017
+msgid "No blocks are defined."
+msgstr "Nebyl určen žádný blok."
+
+#: quotes.module:1037
+msgid "Please enter a block name."
+msgstr "Vložte prosím jméno bloku."
+
+#: quotes.module:1042
+msgid "Please enter valid node IDs."
+msgstr "Vložte prosím platné ID uzlu."
+
+#: quotes.module:1052
+msgid "Block <em>%name</em> successfully updated."
+msgstr "Blok <em>%name</em> byl úspěšně aktualizován."
+
+#: quotes.module:1056
+msgid "Block <em>%name</em> could not be updated."
+msgstr "Blok <em>%name</em> nelze aktualizovat."
+
+#: quotes.module:1063
+msgid "Block <em>%name</em> successfully created."
+msgstr "Blok <em>%name</em> byl úspěšně vytvořen."
+
+#: quotes.module:1067
+msgid "Block <em>%name</em> could not be created."
+msgstr "Blok <em>%name</em> nelze vytvořit."
+
+#: quotes.module:1087
+msgid "Anonymous"
+msgstr "Anonym"
+
+#: quotes.module:1090
+msgid "Enter a unique name for this block. This will identify the block on the %link."
+msgstr "Vložte jedinečné jméno pro tento blok. Toto jméno bude blok identifikovat na %link."
+
+#: quotes.module:1091
+msgid "Block title"
+msgstr "Nadpis bloku"
+
+#: quotes.module:1091
+msgid "Enter the title that will be used for this block when displayed. If desired, you can include the string <em>%title</em> which will be replaced by the title of the quote being displayed in the block."
+msgstr "Vložte nadpis, který se použije při zobrazení tohoto bloku. Můžete použít také proměnnou <em>%title</em>, která se bude nahrazovat nadpisem aktuálně zobrazeného citátu."
+
+#: quotes.module:1092
+msgid "Type"
+msgstr "Typ"
+
+#: quotes.module:1092
+msgid "Random"
+msgstr "Náhodné"
+
+#: quotes.module:1092
+msgid "Most recent"
+msgstr "Nejnovější"
+
+#: quotes.module:1093
+msgid "Node filter"
+msgstr "Filtr podle uzlů"
+
+#: quotes.module:1093
+msgid "To restrict this block to display only certain quotes based on node IDs, enter the IDs here separated by commas, spaces, or returns."
+msgstr "Chcete-li, aby se v tomto bloku zobrazovaly pouze citáty určené pomocí ID uzlu, vložte zde tato ID oddělená čárkami, nebo mezerami."
+
+#: quotes.module:1096;1099
+msgid "Role filter"
+msgstr "Filtr podle rolí"
+
+#: quotes.module:1096
+msgid "To restrict this block to display only quotes submitted by users in specific roles, select the roles here."
+msgstr "Chcete-li, aby se v tomto bloku zobrazovaly pouze citáty, které zaslali uživatelé určitých rolí, označte zde tyto role."
+
+#: quotes.module:1099
+msgid "There are no roles configured with the <em>edit own quotes</em> permission, so no roles are available. To filter by role, please assign this permission to at least one role on the %link."
+msgstr "Žádná role není dostupná, protože žádné role nemají oprávnění <em>editovat vlastní citáty</em>. Chcete-li filtrovat citáty podle rolí, přidělte na %link alespoň jedné roli toto oprávnění."
+
+#: quotes.module:1099
+msgid "permission administration page"
+msgstr "správa oprávnění"
+
+#: quotes.module:1103;1106
+msgid "User filter"
+msgstr "Filtr podle uživatelů"
+
+#: quotes.module:1103
+msgid "To restrict this block to display only quotes submitted by specific users, select the users here."
+msgstr "Chcete-li, aby se v tomto bloku zobrazovaly pouze citáty od některých uživatelů, označte tyto uživatele."
+
+#: quotes.module:1106
+msgid "There are no users with the <em>edit own quotes</em> permission, so no users are available. To filter by user, please assign at least one user to a role with this permission on the %link."
+msgstr "Žádný uživatel není dostupný, protože nikdo z uživatelů nemá oprávnění <em>editovat vlastní citáty</em>. Chcete-li filtrovat citáty podle uživatele, přidělte na %link alespoň jednomu uživateli toto oprávnění."
+
+#: quotes.module:1106
+msgid "user administration page"
+msgstr "správa uživatelů"
+
+#: quotes.module:1120;1123
+msgid "Category filter"
+msgstr "Filtr podle kategorií"
+
+#: quotes.module:1120
+msgid "To restrict this block to display only quotes in specific categories, select the categories here."
+msgstr "Chcete-li, aby se v tomto bloku zobrazovaly pouze citáty z určených kategorií, označte tyto kategorie."
+
+#: quotes.module:1123
+msgid "There are no vocabularies assigned to quotes. To filter by categories, please assign at least one vocabulary to quotes on the %link."
+msgstr "Nejsou tu žádné slovníky určené pro citáty. Pro filtrování podle kategorií nejprve nastavte na %link nejméně jeden slovník pro citáty."
+
+#: quotes.module:1123
+msgid "category administration page"
+msgstr "správa kategorií"
+
+#: quotes.module:1140;1147
+msgid "Delete"
+msgstr "Smazat"
+
+#: quotes.module:1142
+msgid "Block <em>%name</em> deleted."
+msgstr "Blok <em>%name</em> byl smazán."
+
+#: quotes.module:1146
+msgid "<p>Are you sure you want to delete the block <em>%name</em>?"
+msgstr "<p>Skutečně chcete smazat blok <em>%name</em>?"
+
+#: quotes.module:281
+msgid "special"
+msgstr "zvláštní"
+
+#: quotes.module:63
+msgid "administer quotes"
+msgstr "administrace citátů"
+
+#: quotes.module:63
+msgid "edit own quotes"
+msgstr "editovat vlastní citáty"
+
+#: quotes.module:63
+msgid "promote quotes to block"
+msgstr "zobrazovat citáty v bloku"
+

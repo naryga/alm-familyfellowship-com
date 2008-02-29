@@ -1,0 +1,291 @@
+# Translation of image module to German.
+# Gerhard Killesreiter <gerhard@killesreiter.de>, 2004.
+# Uwe Hermann <uwe@hermann-uwe.de>, 2005.
+# Martin Stadler <mstadler@gmx.de>, 2007.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: general\n"
+"POT-Creation-Date: 2007-07-07 14:42+0200\n"
+"PO-Revision-Date: 2007-07-07 14:11+0100\n"
+"Last-Translator: Martin Stadler <mstadler@gmx.de>\n"
+"Language-Team: German Drupal translation team\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-Country: GERMANY\n"
+
+#: image.imagemagick.inc:18
+msgid "Path to the \"convert\" binary"
+msgstr ""
+
+#: image.imagemagick.inc:33
+msgid "Version"
+msgstr ""
+
+#: image.imagemagick.inc:47
+msgid ""
+"No file %file could be found. PHP's <a href='!open-basedir'>open_basedir</a> "
+"security resriction is set to %open-basedir, which may be interfearing with "
+"the attempts to locate ImageMagick."
+msgstr ""
+
+#: image.imagemagick.inc:50
+msgid "The specified ImageMagic path %file does not exist."
+msgstr ""
+
+#: image.imagemagick.inc:99
+msgid ""
+"ImageMagick could not be found. The admin will need to set the path on the "
+"<a href='@image-toolkit-settings'>image toolkit page</a>."
+msgstr ""
+
+#: image.imagemagick.inc:130
+msgid "ImageMagick reported an error: %error"
+msgstr ""
+
+#: image.module:18
+msgid ""
+"The image module is used to create and administer images for your site. Each "
+"image is stored as a post, with thumbnails of the original generated "
+"automatically. There are two default thumbnail sizes, thumbnail and preview. "
+"The thumbnail size is shown as the preview for image posts and when browsing "
+"image galleries. The preview is the default size when first displaying an "
+"image node."
+msgstr ""
+
+#: image.module:19
+msgid ""
+"Image administration allows the image directory and the image sizes to be "
+"set.</p><p>\n"
+"Image galleries are used to organize and display images in galleries.   The "
+"list tab allows users to edit existing image gallery names, descriptions, "
+"parents and relative position, known as a weight.  The add galleries tab "
+"allows you to create a new image gallery defining name, description, parent "
+"and weight."
+msgstr ""
+
+#: image.module:21
+msgid ""
+"<p>You can</p>\n"
+"<ul>\n"
+"<li>view image handling messages in <a href=\"!admin-settings\">administer "
+"&gt;&gt; settings</a>.</li>\n"
+"<li>configure image sizes and file directories at <a href=\"!admin-settings-"
+"image\">administer &gt;&gt; settings &gt;&gt; image</a>.</li>\n"
+"<li>use the <a href=\"!external-http-drupal-org-project-img_assist\">image "
+"assist module</a> to upload and insert images into posts.</li>\n"
+msgstr ""
+
+#: image.module:27
+msgid ""
+"For more information please read the configuration and customization "
+"handbook <a href=\"!image\">Image page</a>."
+msgstr ""
+"Nähere Informationen bezüglich der Konfiguration und Anpassung gibt es auf "
+"der <a href=\"!image\">Handbuch-Seite</a>."
+
+#: image.module:38;223;235;467;579 image.info:0;0
+msgid "Image"
+msgstr "Bild"
+
+#: image.module:40
+msgid ""
+"An image (with thumbnail). This is ideal for publishing photographs or "
+"screenshots."
+msgstr "Bild (mit Vorschaubild). Ideal für Fotos oder Grafiken."
+
+#: image.module:86
+msgid "File paths"
+msgstr "Dateipfade"
+
+#: image.module:90
+msgid "Default image path"
+msgstr "Standard-Pfad für Bilder"
+
+#: image.module:92
+msgid ""
+"Subdirectory in the directory \"%dir\" where pictures will be stored. Do not "
+"include trailing slash."
+msgstr ""
+"Unterverzeichnis im Ordner „%dir“, in dem Bilder gespeichert werden. Keinen "
+"abschließenden Schrägstrich anfügen."
+
+#: image.module:97
+msgid "Maximum upload size"
+msgstr "Maximale Dateigröße"
+
+#: image.module:99
+msgid "KB"
+msgstr "KB"
+
+#: image.module:101
+msgid ""
+"Maximum file size for image uploads. When a maximum image dimensions is "
+"specified for original images the size is checked after resizing. "
+msgstr ""
+"Maximale Dateigröße für das Hochladen von Bildern. Ist eine maximale "
+"Dimension für Original-Bilder angegeben, wird die Dateigröße nach dem "
+"Skalieren geprüft."
+
+#: image.module:106
+msgid "Image sizes"
+msgstr "Bildgrößen"
+
+#: image.module:109
+msgid ""
+"The dimensions on the \"Original\" image will be used to resize the images "
+"when they are first uploaded. If both dimensions are specified the image "
+"will be resized to fit with in that size. If only one dimension is specified "
+"the image will be resized to exactly that dimension with the other "
+"determined by the image aspect ratio."
+msgstr ""
+"Die Dimensionen des „Original“-Bildes werden zum Skalieren der Bilder "
+"verwendet, wenn sie erstmalig geladen werden. Wenn beide Dimensionen "
+"angegeben werden wird das Bild so skaliert, dass es in diese Größe passt. "
+"Wenn nur eine Dimension angegeben wird, wird das Bild genau auf diese Größe "
+"skaliert, während die andere Dimension dem Seitenverhältnis angepasst wird."
+
+#: image.module:114
+msgid "Hidden"
+msgstr "Versteckt"
+
+#: image.module:115
+msgid "Same window"
+msgstr "Selbes Fenster"
+
+#: image.module:116
+msgid "New window"
+msgstr "Neues Fenster"
+
+#: image.module:174
+msgid "Must specify a width or height."
+msgstr "Breite und Höhe müssen angegeben werden."
+
+#: image.module:199
+msgid "Label"
+msgstr "Beschriftung"
+
+#: image.module:199
+msgid "Width"
+msgstr "Breite"
+
+#: image.module:199
+msgid "Height"
+msgstr "Höhe"
+
+#: image.module:199
+msgid "Link"
+msgstr "Link"
+
+#: image.module:228;0
+msgid "image"
+msgstr "Bild"
+
+#: image.module:240
+msgid "Image module settings."
+msgstr "Bildeinstellungen"
+
+#: image.module:266
+msgid "Rebuild image thumbnails"
+msgstr "Vorschaubilder neu erstellen"
+
+#: image.module:277
+msgid "Rebuilding %node-title's resized images."
+msgstr "Skalierte Bilder von %node-title neu erstellen."
+
+#: image.module:297
+msgid ""
+"Uploaded file is not a valid image. Only JPG, PNG and GIF files are allowed."
+msgstr ""
+"Die hochgeladene Datein ist kein gültiges Bild. Es sind nur JPG, PNG und GIF "
+"erlaubt."
+
+#: image.module:312
+msgid ""
+"The original image was resized to fit within the maximum allowed resolution "
+"of %width x %height pixels."
+msgstr ""
+"Die Bildgröße wurde verändert damit sie der größten erlaubten Auflösung von %"
+"width x %height Pixeln entspricht."
+
+#: image.module:317
+msgid ""
+"The image you uploaded was too big. You are only allowed upload files less "
+"than %max_size but your file was %file_size."
+msgstr ""
+"Das hochgeladene Bild ist zu groß (%file_size). Es sind nur %max_size "
+"erlaubt."
+
+#: image.module:389;398
+msgid "Latest image"
+msgstr "Neustes Bild"
+
+#: image.module:390;403
+msgid "Random image"
+msgstr "Zufälliges Bild"
+
+#: image.module:417;850
+msgid "Thumbnail"
+msgstr "Vorschaubild"
+
+#: image.module:469
+msgid "Click \"Browse...\" to select an image to upload."
+msgstr "Ein Bild zum Hochladen auszuwählen."
+
+#: image.module:487
+msgid "You must upload an image."
+msgstr "Ein Bild muss hochgeladen werden."
+
+#: image.module:577
+msgid "Image: Display Image"
+msgstr "Bild: Bild darstellen"
+
+#: image.module:580
+msgid "Image with link"
+msgstr "Bild mit Link"
+
+#: image.module:606
+msgid ""
+"The image %title had missing derivative image which has been regenerated."
+msgstr "Dem Bild %title fehlte die passende Bearbeitung. Diese wurde erstellt."
+
+#: image.module:747
+msgid ""
+"No image toolkit is currently enabled. Without one the image module will not "
+"be able to resize your images. You can select one from the <a href=\"!link"
+"\">image toolkit settings page</a>."
+msgstr ""
+
+#: image.module:785
+msgid "Unable to create scaled %label image"
+msgstr "Erstellen des skalierten Bildes %label nicht möglich"
+
+#: image.module:849 image.install:46
+msgid "Original"
+msgstr "Original"
+
+#: image.module:851
+msgid "Preview"
+msgstr "Vorschau"
+
+#: image.module:49
+msgid "create images"
+msgstr "Bilder erstellen"
+
+#: image.module:49
+msgid "view original images"
+msgstr "Original-Bilder betrachten"
+
+#: image.module:49
+msgid "edit own images"
+msgstr "Eigene Bilder bearbeiten"
+
+#: image.module:49
+msgid "edit images"
+msgstr "Bilder bearbeiten"
+
+#: image.info:0
+msgid "Allows uploading, resizing and viewing of images."
+msgstr "Ermöglicht das Hochladen, Skalieren und Betrachten von Bildern."

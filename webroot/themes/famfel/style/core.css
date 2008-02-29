@@ -1,0 +1,177 @@
+.clear {clear:both;}
+.bottom-padding { margin-bottom: 100px; }
+* { margin:0; padding:0; }
+body { background:#97A689; font-family:Verdana, Arial, Helvetica, sans-serif; padding-top: 20px; }
+.hr { line-height:1px; border-top:1px solid #000; display:block; width:100%; height:1px; font-size:1px; margin-left:6px; width:559px; clear:left; }
+hr { display:none; }
+img { border:none; }
+#container { width:830px; margin:auto; position:relative; background:url(../img/container_crossSection.jpg) repeat-y; }
+h1 { background:url(../img/header.jpg) no-repeat; width:769px; height:113px; text-indent:-2000px; }
+h1 a { width:198px; height:93px; display:block; position:absolute; margin:10px 0 0 8px; outline:none; background: url(../img/logo_ani.gif) no-repeat bottom right;}
+#sideBar, #sidebar-left { width:174px; float:left; padding-left:3px; position:relative; display: inline;}
+#minHeightKludge { height:500px; float:left; margin-left:-1px; width:1px; display:block; line-height:1px; }
+#sideBar ul, #sidebar-left ul.menu { list-style:none; }
+#sideBar li a, #sidebar-left .menu li a { background:url(../img/unchecked.gif) no-repeat; display:block; /*	text-indent:-2000px;*/ text-indent: 40px; font-size: 11px; line-height: 1.5; font-weight: bold; color:white; width:174px; padding-top: 10px; padding-bottom: 14px; /*height:40px;*/ outline:none; text-decoration: none; }
+
+#sideBar li a, #sidebar-left .menu li a:hover { background: url(../img/checked.gif) no-repeat; padding-bottom: 14px; }
+#sidebar-left .menu li a.active { background: url(../img/checked.gif) no-repeat; }
+#sidebar-left .menu li#Home a {background: url(../img/checked.gif) no-repeat;}
+#sidebar-left .menu li.expanded a {background: url(../img/checked.gif) no-repeat;}
+#sideBar #home a, #sidebar-left #home a, #sidebar-left a:title= { background:url(../img/nav_home.gif) no-repeat; width:174px; height:42px; }
+#sideBar li ul li, #sidebar-left li ul li { height:16px; width:166px; display:block; }
+#sideBar li ul li a, #sidebar-left .menu li ul li a { background:#8F9E7F !important; line-height:15px !important; height:15px; text-indent:35px; color:#fff; font-size:9px; font-weight:bold; text-decoration:none; display:block; width:171px !important; background-image:none !important; border-left:solid 2px #243D2A; border-right:solid 1px #DFDFDF; border-bottom:solid 1px #1B2B20; outline:none; padding:0;}
+#sideBar li ul li a:hover, #sidebar-left li ul li a:hover { background:#243D2A !important; }
+#sideBar #christianResources a, #sidebar-left #christianResources a { background:url(../img/nav_resources.gif) no-repeat; }
+#sideBar #christianResources a.checked, #sidebar-left #christianResources a.checked { background:url(../img/nav_resources_checked.gif) no-repeat; }
+#sideBar #filter a, #sidebar-left #filter a { background:url(../img/nav_features.gif); }
+#sideBar #filter a.checked, #sidebar-left #filter a.checked { background:url(../img/nav_features_checked.gif); }
+#sideBar #store a, #sidebar-left #store a { background:url(../img/nav_store.gif); }
+#sideBar #store a.checked, #sidebar-left #store a.checked { background:url(../img/nav_store_checked.gif); }
+#sideBar #care a, #sidebar-left #care a { background:url(../img/nav_customer.gif); }
+#sideBar #care a.checked, #sidebar-left #care a.checked { background:url(../img/nav_customer_checked.gif); }
+#sideBar #account a, #sidebar-left #account a { background:url(../img/nav_account.gif); }
+#sideBar #account a.checked, #sidebar-left #account a.checked { background:url(../img/nav_account_checked.gif); }
+
+/*#sideBar img, #sidebar-left img { position:absolute; top:377px; }*/
+/*#sidebar img, #sidbar-left img { margin-top: 30px;}*/
+
+#content, #main { float:left; width:581px; background:url(../img/content_top.jpg) no-repeat; padding:27px 0 0 9px; position:relative; color:#323232; display:inline;}
+#content h2 { background:url(../img/pageTitle_back.gif) no-repeat; width:567px; height:30px; padding:3px 0 0 0px; font-size:12px; }
+#content h2 span { color:#fff; font-size:18px; margin-left:50px;}
+#content h3, #content h4 { color:#AF8459; }
+#content h3 { font-size:14px; margin-top: 25px; }
+#content h4 {font-size: 12px; }
+.content_indented { width:344px; margin:17px 0 0 11px; }
+#content p, #content table#store_table { font-size:12px; margin:12px 0; line-height:16px; }
+#content p {margin: 12px 20px 12px 0;}
+#content table#store_table { width: 550px;}
+#content ul, #content ol { line-height:22px; font-size:12px; margin:20px 20px 20px 10px; }
+
+#content ul { /*color:#AF8459; margin-left: 30px; */ list-style:none; }
+#content ul.menu { color: #000; list-style: none; margin:20px 20px 20px 20px; }
+#content ol{ margin: 20px 20px 20px 30px}
+#content .column { width:166px; float:left; border:solid 9px #fff; }
+#content .column strong { color:#314333; font-size:14px; }
+#content .column p { font-size:9px; line-height:13px; }
+#content .column li { list-style-type: none; }
+
+#content form { margin-bottom: 20px;}
+#content fieldset { width: 500px;}
+
+#footer { clear:left; height:25px; background:url(../img/footer_back.jpg) no-repeat; margin-left:3px; }
+#footer #copy { text-indent:-2000px; display:block; float:left; }
+#footer #links { display:block; float:left; width:500px; text-align:right; float:right; padding-right:60px; }
+#footer #links a { color:#fff; text-decoration:underline; font-size:9px; margin-right:13px; }
+
+img.image {border: 0px;}
+
+/*home*/
+/*#filteringAd { position:absolute; right:-25px; top:76px; }*/
+#filteringAd { position:absolute; right:-25px; top:316px; background:url(../img/basicFiltering.jpg) no-repeat; width:238px; height:246px; }
+#filteringAd ul { list-style-type: none; }
+#filteringAd li, #filteringAd h3 { text-indent:-2000px; }
+#filteringAd #details { width:106px; height:25px; display:block; margin:16px 0 0 120px; text-indent:-2000px; }
+#filteringAd #buyNow { width:106px; height:25px; display:block; margin:10px 0 0 120px; text-indent:-2000px; }
+
+
+/*generic*/
+#navigating { margin:0 0 10px 74px; }
+
+.resourceList { padding-left:83px; margin:5px 0 40px 0; }
+#sideBible { background:url(../img/holyBible.jpg) no-repeat; }
+#sideRadio { background:url(../img/radio.jpg) no-repeat 18px 5px; }
+#sideDad { background:url(../img/dad.jpg) no-repeat; }
+#sideMom { background:url(../img/mom.jpg) no-repeat; }
+#sideGrandparents { background:url(../img/grandparents.jpg) no-repeat; }
+#sideSAdults { background:url(../img/s_adults.jpg) no-repeat; }
+#sideKids { background:url(../img/kids.jpg) no-repeat; }
+.resourceList b { color:#314134; display:block; font-size:12px; }
+.resourceList ul, .resourceList li { margin:0 !important; line-height:18px; }
+.resourceList a { color:#807063; }
+
+#resource_left {width:350px; float:left; }
+#resource_right {width: 240px; float:right; margin-right: -26px; padding-top: 80px;}
+div.Christian_Resources_on_the_Internet div#squeeze div#resource_right {padding-top: 160px;}
+#resource_left, #resource_right { display: inline;}
+#resource_left .hr {width: 348px;}
+
+#resource_right #dailyVs { background:url(../img/dailyVs_crossSection.jpg) repeat-y; width:237px; }
+#resource_right #google_box { margin-top: 30px;}
+#resource_right #dailyVs div { background:url(../img/dailyVs_top.jpg) no-repeat; padding-top:35px; position:relative; }
+#resource_right #dailyVs h3, #resource_right #dailyVs h4 { width:150px; color:#3E534A; text-align:center; margin-left:54px; }
+#resource_right #dailyVs h3{ font-size:13px; }
+#resource_right #dailyVs h4{ font-size:10px; }
+#resource_right #dailyVs p{ font-size:12px; margin-left:30px; width:175px; line-height: 14px;}
+#resource_right #dailyVs a { font-size:9px; color:#3E534A; display:block; width:150px; text-align:center; margin-left:54px; margin-bottom: 10px; }
+#resource_right #dailyVs span { background:url(../img/dailyVs_bottom.jpg); display:block; width:237px; height:36px; }
+#resource_right #salvationBtn { position:absolute; margin-top:30px; }
+
+#dove_pic {float:right; margin-right: 25px;}
+#cross_pic {}
+#sky_pic { float: right; margin-right: 25px;}
+
+/*help*/
+form { margin-left:9px; margin-bottom: 100px;}
+textarea, .text { background:#E0E9D6 url(../img/form_back.gif) repeat-x; border:1px solid #ABB0AA; border-bottom:2px solid #E0E0E0; }
+label span { color:#C0883E; font-weight:bold; display:block; font-size:11px; line-height:14px; }
+form .text { width:166px; height:17px; margin-right:15px; }
+#left_fields { float: left; width: 220px; }
+#left_fields input#edit-name, #left_fields input#edit-email, #left_fields input#edit-telephone, #left_fields input#edit-uname { width: 210px !important; }
+#midle_fields { float: left; width: 10px; }
+#right_fields {float: left; width: 190px; }
+textarea.help { float:left; margin-top:26px; width:250px; height:176px;  }
+textarea.pswdrst { float:left; margin-top:26px; width:270px; height:199px;  }
+#submitBtn { float:left; width:80px; height:28px; margin-top:26px; }
+
+.edit #page #container #content textarea {float:none; width: 550px;}
+
+fieldset.collapsible {float: none; clear:both;}
+
+/*founders_page*/
+#david {}
+
+/*authorize.net stuff*/
+body#page-secure_shopping div.AuthorizeNetSeal, body#page-buy_now div.AuthorizeNetSeal { float:right; width: 150px; margin-right: 30px; text-align: center; }
+body#page-buy_now div.AuthorizeNetSeal {width:90px;}
+/*.edit #page	{width: 940px; }
+.edit #page #container { width: 100%;}*/
+.edit #page #container #content textarea {float:none; width: 550px;}
+.edit #page #container #content textarea#edit-body { none }
+
+.famfel_tables { width:540px; margin:0 10px; background:#E0E9D6; border:1px solid #ABB0AA; margin-top: 30px; }
+.famfel_tables td { padding: 0 5px; font-size: 12px; border-bottom: 1px dashed #69956C; }
+.famfel_tables td.lables { /*background-color: #69956C;*/ width: 150px;  }
+
+
+
+
+#block-user-1 { margin-top: 20px; }
+
+#google_yahoo_table { width:400px; }
+
+div.FamilyFellowship.com_Video_Tutorial_Series ul li p.link { margin-left: 50px; }
+div.FamilyFellowship.com_Video_Tutorial_Series ul li h4 { color: #00B050; }
+div.breadcrumb { margin: 0 5px -5px 5px; font-size: small; }
+div.breadcrumb a { color: #E8BD7C; }
+div.breadcrumb a:hover { color: #AF8459; }
+
+
+.left, .right { float: left; display:inline; }
+.left { width: 250px; }
+.left table, .right table {width: 245px; font-size: 14px;}
+.review_account_info { width: 300px; background-color: #A6CBA9; margin-right: 10px;}
+.review_account_info p { font-size: 16px !important; line-height: 110% !important; margin: 15px 10px !important;}
+.review_account_info h3 { background-color: white; }
+.right { width: 240px; }
+.right label { font-size:14px; }
+.right input { font-size: 14px; }
+.messages { width: 550px; }
+.messages p.notice { padding:0 20px;}
+.messages ul {padding-left: 25px;}
+.messages li {list-style-type: circle;}
+.pop { font-weight: bold; color: #C00000; }
+
+
+.description2, .cookies, .antivirus {border: 1px solid #AF8459; margin-right: 10px; padding: 10px; }
+
+body#page-filter_features div#content ul {list-style-type: circle; margin-left: 20px;}

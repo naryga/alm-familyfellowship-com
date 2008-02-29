@@ -1,0 +1,189 @@
+<?php
+
+function subform_install() {
+  
+  drupal_set_message('Installing subform');
+  
+  
+  if( !module_exist( "content" ) ) {
+    drupal_set_message( t('content.module (cck) is not installed. Subform installation can not proceed.'), 'error' );
+    return false;
+  }
+  
+  if( !module_exist( "content_type_reference" ) ) {
+    drupal_set_message( t('content_type_reference.module is not installed. Subform requires content_type_reference.') );
+  }
+  
+  
+  drupal_set_message('Generating relation content type');
+  // these CCK functions are not implemented
+  // content_type_create( $type_definition );
+  _create_relation_content_type();
+    
+  switch ( $GLOBALS['db_type'] ) {
+  
+    case 'mysqli':
+    case 'mysql':
+    
+    drupal_set_message('Generating relation instances table');
+  
+    db_query("
+     
+              -- 
+              -- Table structure for table `node_relation_instances`
+              -- 
+              -- Creation: Nov 30, 2006 at 08:40 AM
+              -- Last update: Nov 30, 2006 at 12:08 PM
+              -- 
+              
+              CREATE TABLE IF NOT EXISTS `node_relation_instances` (
+                `node_one` int(10) NOT NULL default '0',
+                `node_two` int(10) NOT NULL default '0',
+                `type` int(10) unsigned NOT NULL default '0',
+                `id` int(10) unsigned NOT NULL auto_increment,
+                PRIMARY KEY  (`id`),
+                KEY `node_one` (`node_one`,`node_two`,`type`)
+              ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+              ");
+              
+      db_query("
+              
+              CREATE TABLE IF NOT EXISTS `subform_dummy` (
+                `nid` int(10) unsigned NOT NULL default '0',
+                `dummy` varchar(5) NOT NULL default 'dummy',
+                PRIMARY KEY  (`nid`)
+              ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+              
+      ");
+
+
+      $success = TRUE;
+      break;
+    case 'pgsql':
+    
+      $success = FALSE;
+      break;
+  } // End case
+
+  
+  // this will cause the CCK admin screens to correctly display the new field type
+  content_clear_type_cache();
+  _content_type_info( true );
+  
+  
+  if ($success) {
+    drupal_set_message( t('Subform module installed tables successfully.') );
+  }
+  else {
+    drupal_set_message( t('The installation of the subform module was unsuccessful.'), 'error' );
+  }
+  
+}
+
+function _create_relation_content_type() {
+
+  switch ( $GLOBALS['db_type'] ) {
+  
+    case 'mysqli':
+    case 'mysql':
+    
+      $found_results = false;
+      $results = db_query("SELECT type_name FROM node_type_content WHERE type_name = \"content_relation_type\"");
+      while ($obj = db_fetch_object( $results )) {
+        $found_results = true;
+      }
+    
+      if( ! $found_results ) {
+        db_query( "
+          INSERT IGNORE INTO
+            `node_type_content` (`type_name`, `label`, `description`, `help`, `title_label`)
+          VALUES
+            ('content_relation_type', 'relation type', '', '', 'Name');
+        " );
+      }
+      
+      $found_results = false;
+      $results = db_query("SELECT field_name FROM node_field WHERE field_name = \"field_type_one\"");
+      while ($obj = db_fetch_object( $results )) {
+        $found_results = true;
+      }
+      
+      if( ! $found_results ) {
+      
+        $query = "INSERT IGNORE INTO node_field (field_name, type, global_settings, required, multiple, db_storage) VALUES ('field_type_one', 'content_type_reference', 'a:0:{}', 1, 0, 1);";
+        db_query( $query );
+        $query = "INSERT IGNORE INTO node_field (field_name, type, global_settings, required, multiple, db_storage) VALUES ('field_type_one_cardinality', 'number_integer', 'a:3:{s:3:\"min\";s:1:\"1\";s:3:\"max\";s:0:\"\";s:14:\"allowed_values\";s:0:\"\";}', 1, 0, 1);";
+        db_query( $query );
+        $query = "INSERT IGNORE INTO node_field (field_name, type, global_settings, required, multiple, db_storage) VALUES ('field_type_two', 'content_type_reference', 'a:0:{}', 1, 0, 1);";
+        db_query( $query );
+        $query = "INSERT IGNORE INTO node_field (field_name, type, global_settings, required, multiple, db_storage) VALUES ('field_type_two_cardinality', 'number_integer', 'a:3:{s:3:\"min\";s:1:\"1\";s:3:\"max\";s:0:\"\";s:14:\"allowed_values\";s:0:\"\";}', 1, 0, 1);";
+        db_query( $query );
+
+      }
+      
+      $found_results = false;
+      $results = db_query("SELECT field_name FROM node_field_instance WHERE field_name = \"field_type_one\"");
+      while ($obj = db_fetch_object( $results )) {
+        $found_results = true;
+      }
+      
+      if( ! $found_results ) {
+        
+        $query = "INSERT IGNORE INTO node_field_instance (field_name, type_name, weight, label, widget_type, widget_settings, description) VALUES ('field_type_one', 'content_relation_type', 0, 'type one', 'content_type_reference', 'a:0:{}', '');";
+        db_query( $query );
+        $query = "INSERT IGNORE INTO node_field_instance (field_name, type_name, weight, label, widget_type, widget_settings, description) VALUES ('field_type_two', 'content_relation_type', 2, 'type two', 'content_type_reference', 'a:0:{}', '');";
+        db_query( $query );
+        $query = "INSERT IGNORE INTO node_field_instance (field_name, type_name, weight, label, widget_type, widget_settings, description) VALUES ('field_type_one_cardinality', 'content_relation_type', 1, 'type one cardinality', 'number', 'a:0:{}', 'A limitation on how many nodes of type one, can be referenced by a single node of type two. Please use 1 for one and 999999 for many, but also feel free to use any other number as needed.');";
+        db_query( $query );
+        $query = "INSERT IGNORE INTO node_field_instance (field_name, type_name, weight, label, widget_type, widget_settings, description) VALUES ('field_type_two_cardinality', 'content_relation_type', 3, 'type two cardinality', 'number', 'a:0:{}', 'A limitation on how many nodes of type two, can be referenced by a single node of type one. Please use 1 for one and 999999 for many, but also feel free to use any other number as needed.');";
+        db_query( $query );
+        
+      }
+    
+      db_query( "
+        -- 
+        -- Table structure for table `node_content_relation_type`
+        -- 
+        
+        CREATE TABLE IF NOT EXISTS node_content_relation_type (
+          vid int(10) unsigned NOT NULL default '0',
+          nid int(10) unsigned NOT NULL default '0',
+          field_type_one_cn varchar(128) NOT NULL default '',
+          field_type_two_cn varchar(128) NOT NULL default '',
+          field_type_one_cardinality_value int(11) NOT NULL default '0',
+          field_type_two_cardinality_value int(11) NOT NULL default '0',
+          PRIMARY KEY  (vid)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+      " );
+      
+      $success = TRUE;
+      break;
+      
+    case 'pgsql':
+    
+      $success = FALSE;
+      break;
+      
+  }
+
+  if ($success) {
+    // drupal_set_message( t('Subform module installed tables successfully.') );
+  }
+  else {
+    drupal_set_message( t('The installation of the subform module was unsuccessful.'), 'error' );
+  }
+  
+}
+
+
+
+
+
+
+
+
+
+
+

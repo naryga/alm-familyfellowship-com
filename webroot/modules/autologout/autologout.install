@@ -1,0 +1,100 @@
+<?php
+// $Id: autologout.install,v 1.2 2006/05/26 12:07:17 karpuz Exp $
+
+/**
+ * @file
+ * Auto installation for database table(s)
+ */
+
+if (!function_exists('autologout_install')) {
+  function autologout_install() {
+    $created = FALSE;
+    switch ($GLOBALS['db_type']) {
+      case 'mysql':
+      case 'mysqli':
+        $query1 = db_query("CREATE TABLE IF NOT EXISTS {autologout} (".
+                           "uid INT(10) NOT NULL,".
+                           "setting INT(2) NOT NULL DEFAULT 0,".
+                           "PRIMARY KEY (uid)".
+                           ") /*!40100 DEFAULT CHARACTER SET utf8 */");
+        if($query1) {
+          $created = TRUE;
+        }
+        break;
+
+      case 'pgsql':
+        $query1 = db_query("CREATE TABLE {autologout} (".
+                           "uid INT NOT NULL,".
+                           "setting SMALLINT NOT NULL default 0,".
+                           "PRIMARY KEY (uid))");
+        if($query1) {
+          $created = TRUE;
+        }
+        break;
+    } // end switch
+
+    // sink module's weight to the deepest depths of the module_list()
+    db_query("UPDATE {system} SET weight = %d WHERE name = '%s'", 1000, 'autologout');
+
+    _autologout_set_js();
+
+    // provide the user with some install feedback
+    if ($created) {
+      drupal_set_message(t('Autologout database tables installed'));
+    }
+    else {
+      drupal_set_message(t('Table install for autologout was unsuccessful.'));
+    }
+  } // end function
+}
+
+function _autologout_set_js() {
+
+  variable_set('autologout_js',
+    '<script language="javascript">' . "\n".
+    "// <!-- \n".
+    "function autologout_start_up() { \n".
+    "  today = document.getElementById(\"autologout_js_div_value\").innerHTML; \n".
+    "  autologout_next_second();\n".     
+    "}\n".
+    "function autologout_next_second() { \n".
+    "  autologout_count_down(); \n".
+    "  setTimeout(\"autologout_next_second()\", 1000); \n".
+    "}\n".
+    "function autologout_count_down() { \n".
+    "  var output; \n".
+    "  var time;  \n".
+    "  var hours; \n".
+    "  var mins; \n".
+    "  var secs; \n".
+    "  document.getElementById(\"autologout_js_div_value\").innerHTML = ".
+      "document.getElementById(\"autologout_js_div_value\").innerHTML - 1; \n".
+    "  time = document.getElementById(\"autologout_js_div_value\").innerHTML;\n".
+    "  if(time < 3599) {\n".
+    "    hours = 0;\n".
+    "  }\n".
+    "  else { \n".
+    "    hours = (time - (time % 3600)) / 3600; \n".
+    "  }\n".
+    "  time = time - (hours * 3600);\n".
+    "  if (time < 59) { \n".
+    "    mins = 0;\n".
+    "  }\n".
+    "  else {\n".
+    "    mins = (time - (time % 60)) / 60;\n".
+    "  }\n".
+    "  time = time - (mins * 60);\n".
+    "  secs = time;\n".
+    "  output = nf2(hours) + \"h \" + nf2(mins) + \"m \" + nf2(secs) + \"s\";\n".
+    "  if((hours+mins+secs) >= 0) {\n".
+    "    document.getElementById(\"autologout_js_div\").innerHTML = output;      \n".
+    "  }\n".
+    "}\n".
+    "function nf2(num) {\n".
+    "  if (num > 9) return num; \n".
+    "  return \"0\" + num;\n".
+    "}\n".
+    "// -->\n".
+    "</script>\n");
+}
+?>

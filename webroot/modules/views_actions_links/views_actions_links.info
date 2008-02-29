@@ -1,0 +1,11 @@
+; $Id: views_actions_links.info,v 1.1.2.2 2007/06/18 23:07:13 dww Exp $
+name = Views Actions Links
+description = Integrates the Actions module into Views by providing a field for each action.
+dependencies = actions views
+package = Views
+
+; Information added by drupal.org packaging script on 2007-07-13
+version = "5.x-1.1"
+project = "views_actions_links"
+datestamp = "1184308507"
+

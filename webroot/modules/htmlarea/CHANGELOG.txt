@@ -1,0 +1,12 @@
+$Id: CHANGELOG.txt,v 1.1 2005/06/09 00:56:55 gordon Exp $
+
+htmlarea cvs
+------------
+
+- add use support for configuing different languages
+
+htmlarea 4.6
+------------
+
+- remove use of database for determining which textareas to change
+- change backend to use Xinha instead of HTMLArea

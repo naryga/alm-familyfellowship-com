@@ -1,0 +1,4 @@
+; $Id: payc_check.info,v 0.01 2008/01/29 20:55:35 dries Exp $
+name = PayCheck
+description = Allows site to check subscription payments for validity, as well as for affiliates
+dependencies = profile sweeper

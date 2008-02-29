@@ -1,0 +1,975 @@
+<?php
+// $Id: htmlarea.module,v 1.104.2.1 2007/11/11 02:58:24 gordon Exp $ $Name: DRUPAL-5--2 $
+
+function htmlarea_help($section) {
+
+  switch($section) {
+    case "admin/settings/htmlarea":
+      if (!_htmlarea_get_jsdir()) {
+        $output = t('<p>Xinha/HTMLArea is not installed, download Xinha from <a href="http://xinha.python-hosting.com/wiki/DownloadsPage">http://xinha.python-hosting.com/wiki/DownloadsPage</a> (recommended), and install it into the htmlarea module directory.</p>');
+      }
+      break;
+    case "admin/settings/htmlarea/plugins/css":
+      $output .= t('<p>the css module allows the administrator to add one or more
+  dropdown boxes to the toolbar which allow the assigning of a
+  style to an area of test.</p>
+
+  <ul>
+    <li>dropbox - the that will be assigned to the pull down list
+    on the toolbar.</li>
+
+    <li>context - using a HTML tag will it will only be allowed to
+    be used on text that exists within this tag.</li>
+
+    <li>weight - sets the order of the pulldown menus on the
+    toolbar.</li>
+
+    <li>delete - allow the administrator to delete a pulldown
+    menu.</li>
+  </ul>
+
+  <p>adding a new drop box will allow create an addition input
+  table to allow the adding of the titles and css tags.</p>
+
+  <ul>
+    <li>title - The name that will be displayed on the select
+    list.</li>
+
+    <li>css - the name of the css that exists in the style
+    sheet.</li>
+
+    <li>weight - sets the order of the pulldown menus on the
+    toolbar.</li>
+
+    <li>delete - allow the administrator to delete a pulldown
+    menu.</li>
+  </ul>');
+      break;
+  }
+
+  return $output;
+}
+
+function htmlarea_menu($maycache) {
+  $items = array();
+  if ($maycache) {
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea',
+      'title' => t('HTMLArea/Xinha'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => 'htmlarea_settings',
+      'access' => user_access('administer site configuration'), 
+      'description' => t('Configure HTMLArea/Xinha'),
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/main', 
+      'title' => t('htmlarea'),
+      'callback' => 'htmlarea_settings', 
+      'type' => MENU_DEFAULT_LOCAL_TASK, 
+      'weight' => -10,
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/toolbar', 
+      'title' => t('toolbar'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => 'htmlarea_settings_toolbar',
+      'type' => MENU_LOCAL_TASK, 
+      'weight' => -1,
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/plugins', 
+      'title' => t('plugins'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('htmlarea_settings_plugins'), 
+      'type' => MENU_LOCAL_TASK
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/plugins/select', 
+      'title' => t('select'),
+      'callback' => 'htmlarea_settings_plugins', 
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/fontnames', 
+      'title' => t('font names'),
+      'callback' => 'drupal_get_form', 
+      'callback arguments' => array('htmlarea_settings_array', 'fontnames'),
+      'type' => MENU_LOCAL_TASK
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/fontsize', 
+      'title' => t('font size'),
+      'callback' => 'drupal_get_form', 
+      'callback arguments' => array('htmlarea_settings_array', 'fontsize'),
+      'type' => MENU_LOCAL_TASK
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/formatblock', 
+      'title' => t('format block'),
+      'callback' => 'drupal_get_form', 
+      'callback arguments' => array('htmlarea_settings_array', 'formatblock'),
+      'type' => MENU_LOCAL_TASK
+    );
+    $items[] = array(
+      'path' => 'admin/settings/htmlarea/custom', 
+      'title' => t('custom js'),
+      'callback' => 'drupal_get_form', 
+      'callback arguments' => array('htmlarea_settings_custom'), 
+      'weight' => 10,
+      'type' => MENU_LOCAL_TASK
+    );
+  }
+  else {
+    $plugins = variable_get('htmlarea_plugins', array());
+    foreach ($plugins as $plugin => $a) {
+      if ($a['enable']) {
+        $items = array_merge($items, module_invoke_all('htmlarea_plugin', $a['name'], 'menu'));
+      }
+    }
+  }
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm()
+ */
+function htmlarea_perm() {
+  return array('upload images');
+}
+
+/**
+ * Implementation of hook_elements()
+ */
+function htmlarea_elements() {
+  $elements['textarea'] = array('#after_build' => array('htmlarea_after_build'));
+  return $elements;
+}
+
+function htmlarea_after_build($form, $form_element) {
+  static $loaded = FALSE;
+  if (_htmlarea_is_changed($form['#name'])) {
+    $form['#attributes']['editor'] = 'xinha';
+    $form['#resizable'] = FALSE;
+    _htmlarea_load_editor();
+  }
+  return $form;
+}
+
+/**
+ * Implementation of hook_user()
+ */
+function htmlarea_user($type, $edit, &$user, $category = NULL) {
+  switch ($type) {
+    case "form":
+      if ($category == 'account') {
+        $form['htmlarea'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('text area settings')
+          );
+        $form['htmlarea']['htmlarea_isenabled'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Enable rich text editor while authoring'),
+          '#return_value' => 1,
+          '#default_value' => isset($user->htmlarea_isenabled) ? $user->htmlarea_isenabled : 1,
+        );
+        return $form;
+      }
+      return NULL;
+    case 'validate':
+      return array('htmlarea_isenabled' => $edit['htmlarea_isenabled']);
+  }
+}
+
+/**
+ * Implementation of hook_htmlarea_plugin()
+ */
+function htmlarea_htmlarea_plugin($plugin, $op) {
+  switch($op) {
+    case 'menu':
+      switch(strtolower($plugin)) {
+        case 'css':
+          $items[] = array('path' => 'admin/settings/htmlarea/plugins/' .strtolower($plugin),
+            'title' => t('css'),
+            'callback' => 'htmlarea_settings_plugins_css', 
+            'access' => user_access('administer site configuration'), 
+            'type' => MENU_LOCAL_TASK);
+          break;
+        case 'help created':
+          $items[] = array('path' => 'admin/settings/htmlarea/plugins/' .strtolower($plugin),
+            'title' => t(strtolower($plugin)),
+            'callback' => 'htmlarea_settings_plugins_help', 
+            'callback arguments' => array($plugin),
+            'access' => user_access('administer site configuration'), 
+            'type' => MENU_LOCAL_TASK);
+          break;
+      }
+      return $items;
+      break;
+    case 'execute':
+      unset($output);
+      switch(strtolower($plugin)) {
+        case 'css':
+          $plugins = variable_get('htmlarea_plugins_css', array());
+          $param = "  editor.registerPlugin('$plugin', {\n";
+          $param.= "    combos : [\n";
+          $combos = array();
+          foreach ($plugins as $k => $v) {
+            $temp = "      { label : \"" .$v['data'] ."\",\n";
+            $temp.= "        options : { \"&mdash; None &mdash;\" : \"\"";
+            if (is_array($v['css']) && $v['css'] != array()) {
+              $temp.= ",\n";
+              $css = array();
+              foreach ($v['css'] as $ck => $cv) {
+                $css[] = "          \"" .$cv['data'] ."\" : \"" .$cv['value'] ."\"";
+              }
+              $temp.= implode(",\n", $css) ."\n";
+            }
+            $temp.= "        }";
+            if ($v['context'] != "") {
+              $temp.= ",\n        context : \"" .$v['context'] ."\"\n";
+            }
+            $temp.= "\n      }";
+            $combos[] = $temp;
+          }
+          $param.= implode(",\n", $combos) ."\n";
+          $param.= "    ]\n";
+          $param.= "  });";
+          $output[] = $param;
+          break;
+        case 'uploadimage':
+          $popup = drupal_get_path('module', 'htmlarea') .'/plugins/UploadImage/popups/insert_image.php';
+          $output[] = "  editor.registerPlugin('$plugin', '$popup');";
+          break;
+        case 'uploaddocuments':
+          $popup = drupal_get_path('module', 'htmlarea') .'/plugins/UploadDocuments/popups/insert_link.php';
+          $output[] = "  editor.registerPlugin('$plugin', '$popup');";
+          break;
+      }
+      return $output;
+      break;
+  }
+}
+
+function htmlarea_settings() {
+  if (variable_get('filter_html', 0)) {
+    $form['html_area_filtertags'] = array(
+      '#type' => 'item',
+      '#title' => t('Filter HTML tags'),
+      '#value' => t('The Filter HTML Tags is Enabled, This conflicts with htmlarea. '). l(t('Please disable'), 'admin/system/filters'),
+    );
+  }
+
+  $form['htmlarea_user_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Default for New Users'),
+    '#return_value' => true,
+    '#default_value' => variable_get('htmlarea_user_default', true),
+    '#description' => t('Default setting which determines if a new user will be allowed to use htmlarea'),
+  );
+  $form['htmlarea_killwordonpaste'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('kill word on paste'),
+    '#return_value' => true,
+    '#default_value' => variable_get('htmlarea_killwordonpaste', false),
+    '#description' => t('This option configures htmlarea so that when pasting from word documents will clean up the word html'),
+  );
+  $form['htmlarea_add_rev'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('add revision to web page'),
+    '#return_value' => TRUE,
+    '#default_value' => variable_get('htmlarea_add_rev', FALSE),
+    '#description' => t('If you have any problems with htmlarea check this box, and the revision will be added to the html. When you submit a bug report please upload the html source from the web browser to enable better support.'),
+  );
+  $form['htmlarea_add_linebreak'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('insert linebreaks in toolbar'),
+    '#return_value' => TRUE,
+    '#default_value' => variable_get('htmlarea_add_linebreak',  TRUE),
+    '#description' => t("If you are using the forked version of Xinha from <a href=\"http://xinha.python-hosting.com/wiki/DownloadsPage\">http://xinha.python-hosting.com/wiki/DownloadsPage</a> the linebreaks have been corrected and work as they should. Enabling this will cause problems with the original version, and some plugins."),
+  );
+  $form['htmlarea_usestyle'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use the themes current style'),
+    '#default_value' => variable_get('htmlarea_usestyle', 1),
+    '#description' => t('Enabling this will instruct Xinha to use the CSS
+    that is being used in your current theme'),
+  );
+  $form['htmlarea_bodystyle'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page Style'),
+    '#default_value' => variable_get('htmlarea_bodystyle', ''),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t('Set the style of the htmlarea body'),
+  );
+
+  $form['htmlarea_visgroup'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Textarea specific visibility settings'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $form['htmlarea_visgroup']['htmlarea_visibility'] = array(
+    '#type' => 'radios',
+    '#title' => t('Show Textarea on specific pages'),
+    '#default_value' => variable_get('htmlarea_visibility', 0),
+    '#options' => array(
+      t('Show on every page except the listed pages.'),
+      t('Show on only the listed pages.')),
+  );
+  $form['htmlarea_visgroup']['htmlarea_display'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Pages'),
+    '#default_value' => variable_get('htmlarea_display', 'admin/*'),
+    '#cols' => 40,
+    '#rows' => 5,
+    '#description' => t("Enter one page per line as Drupal paths. The path to an individual is the Drupal path followed by '.' and the name of the textarea. The '*' character is a wildcard. Example paths are '<em>blog</em>' for the blog page and '<em>blog/*</em>' for every personal blog. '<em>node/*/blog.body</em>' is for the textarea named body on the blog pages. '<em>&lt;front&gt;</em>' is the front page."),
+  );
+
+  return system_settings_form($form);
+}
+
+function htmlarea_settings_toolbar() {
+  $toolbar = _htmlarea_build_toolbar(true);
+  usort($toolbar, "_htmlarea_sort");
+
+  $form['htmlarea_toolbar'] = array('#tree' => TRUE,);
+  foreach ($toolbar as $k => $v) {
+    if (!($v['enabled'] == 0 && ($v['data'] == 'space' || $v['data'] == 'separator' || $v['data'] == 'linebreak'))) {
+      // display name
+      $form['htmlarea_toolbar'][$k]['desc'] = array(
+        '#type' => 'item',
+        '#value' => t($v['data']),
+      );
+      $form['htmlarea_toolbar'][$k]['data'] = array(
+        '#type' => 'value',
+        '#value' => $v['data'],
+      );
+      $form['htmlarea_toolbar'][$k]['enabled'] = array(
+        '#type' => 'checkbox',
+        '#default_value' =>  $v['enabled'],
+        '#return_value' => 1,
+      );
+      $form['htmlarea_toolbar'][$k]['weight'] = array(
+        '#type' => 'weight',
+        '#default_value' =>  $v['weight'],
+        '#delta' => 20,
+      );
+    }
+  }
+  $form['buttons']['separator'] = array('#type' => 'submit', '#value' => t('Add separator') );
+  $form['buttons']['space'] = array('#type' => 'submit', '#value' => t('Add space') );
+  $form['buttons']['linebreak'] = array('#type' => 'submit', '#value' => t('Add linebreak') );
+  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset to defaults') );
+
+  return $form;
+}
+
+function theme_htmlarea_settings_toolbar($form) {
+  $rows = array();
+  foreach (element_children($form['htmlarea_toolbar']) as $key) {
+    $row = array();
+    if (is_array($form['htmlarea_toolbar'][$key]['desc'])) {
+      $row[] = drupal_render($form['htmlarea_toolbar'][$key]['desc']) . drupal_render($form['htmlarea_toolbar'][$key]['data']);
+      $row[] = drupal_render($form['htmlarea_toolbar'][$key]['enabled']);
+      $row[] = drupal_render($form['htmlarea_toolbar'][$key]['weight']);
+    }
+    $rows[] = $row;
+  }
+  $header = array(t('function'), t('enabled'), t('weight'));
+
+  $output = theme('table', $header, $rows);
+  $output .= drupal_render($form);
+
+  return $output;
+}
+
+function htmlarea_settings_toolbar_submit($form_id, $form_values) {
+  $op = $_POST['op'];
+  if ($op == t('Add separator')) {
+    $form_values['htmlarea_toolbar'][] = array('data' => 'separator', 'weight' => '-1', 'enabled' => '1');
+    $form_values['op'] = t('Save configuration');
+  }
+  elseif ($op == t('Add space')) {
+    $form_values['htmlarea_toolbar'][] = array('data' => 'space', 'weight' => '-1', 'enabled' => '1');
+    $form_values['op'] = t('Save configuration');
+  }
+  elseif ($op == t('Add linebreak')) {
+    $form_values['htmlarea_toolbar'][] = array('data' => 'linebreak', 'weight' => '-1', 'enabled' => '1');
+    $form_values['op'] = t('Save configuration');
+  }
+
+  system_settings_form_submit($form_id, $form_values);
+  drupal_goto('admin/settings/htmlarea/toolbar');
+}
+
+function htmlarea_settings_plugins() {
+  // build list of plugins
+  $files = array_merge(file_scan_directory(_htmlarea_get_jsdir() . '/plugins', '.*', array('.', '..', 'CVS', '.svn'), 0, false), file_scan_directory(drupal_get_path('module', 'htmlarea') . '/plugins', '.*', array('.', '..', 'CVS', '.svn'), 0, false));
+  usort($files, '_htmlarea_sort_plugins');
+  $plugins = variable_get('htmlarea_plugins', array());
+
+  $form['htmlarea_plugins'] = array('#tree' => TRUE,);
+  foreach ($files as $f) {
+    // display name
+    $form['htmlarea_plugins'][$f->filename]['desc'] = array(
+      '#type' => 'item',
+      '#value' => $f->basename,
+    );
+    // name saved with the enable setting
+    $form['htmlarea_plugins'][$f->filename]['name'] = array(
+      '#type' => 'value',
+      '#value' => $f->basename,
+    );
+    // enable checkbox
+    $form['htmlarea_plugins'][$f->filename]['enable'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $plugins[$f->filename]['enable'],
+      '#return_value' => 1,
+    );
+  }
+
+  return system_settings_form($form);
+}
+
+/**
+ * Format the pluigin settings page into a table
+ */
+function theme_htmlarea_settings_plugins($form) {
+  $rows = array();
+  foreach (element_children($form['htmlarea_plugins']) as $key) {
+    $row = array();
+    if (is_array($form['htmlarea_plugins'][$key]['desc'])) {
+      $row[] = drupal_render($form['htmlarea_plugins'][$key]['desc']) . drupal_render($form['htmlarea_plugins'][$key]['name']);
+      $row[] = drupal_render($form['htmlarea_plugins'][$key]['enable']);
+    }
+    $rows[] = $row;
+  }
+  $header = array(t("plugin"), t("enable"));
+
+  $output = theme('table', $header, $rows);
+  $output .= drupal_render($form);
+
+  return $output;
+}
+
+/**
+ * Save the plugins settings, we can't use system_settings_form_submit() as the
+ * form callback because it wouldn't call theme_htmlarea_settings_plugins().
+ */
+function htmlarea_settings_plugins_submit($form_id, $form_values) {
+  system_settings_form_submit($form_id, $form_values);
+  drupal_goto('admin/settings/htmlarea/plugins');
+}
+
+function htmlarea_settings_plugins_css() {
+  $edit = $_POST['edit'];
+  if($edit) {
+    foreach ($edit["htmlarea_plugins_css"] as $k => $v) {
+      if ($v['delete'] == '1' || $v['data'] == '') {
+        unset($_POST['edit']["htmlarea_plugins_css"][$k]);
+      }
+      else {
+        if ($v['css']) {
+          foreach ($v['css'] as $ck => $cv) {
+            if ($cv['delete'] == '1' || $cv['data'] == '') {
+              unset($_POST['edit']["htmlarea_plugins_css"][$k]['css'][$ck]);
+            }
+            unset($_POST['edit']['htmlarea_plugins_css'][$k]['css'][$ck]['delete']);
+          }
+          usort($_POST['edit']['htmlarea_plugins_css'][$k]['css'], '_htmlarea_sort');
+        }
+        unset($_POST['edit']['htmlarea_plugins_css'][$k]['delete']);
+      }
+    }
+    usort($_POST['edit']['htmlarea_plugins_css'], '_htmlarea_sort');
+    system_settings_save($edit);
+  }
+  $plugins = variable_get("htmlarea_plugins_css", array());
+  
+  $header = array(array('data' => t('dropbox')), array('data' => t('context')), array('data' => t('weight')), array('data' => t('delete'), 'align' => 'center'));
+  $header_css = array(array('data' => t('title')), array('data' => t("css")), array('data' => t('weight')), array('data' => t('delete'), 'align' => 'center'));
+  usort($plugins, "_htmlarea_sort");
+  foreach ($plugins as $k => $v) {
+    $rows[] = array(array('data' => form_textfield('', "htmlarea_plugins_css][$k][data", $v['data'], 30, 30)), array('data' => form_textfield('', "htmlarea_plugins_css][$k][context", $v['context'], 30, 30)), array('data' => form_weight('', "htmlarea_plugins_css][$k][weight", $v['weight'])), array('data' => form_checkbox('', "htmlarea_plugins_css][$k][delete", 1, 0), 'align' => 'center'));
+    $rows_css = array();
+    if ($v['css']) {
+      foreach ($v['css'] as $ck => $cv) {
+        $rows_css[] = array(array('data' => form_textfield('', "htmlarea_plugins_css][$k][css][$ck][data", $cv['data'], 30, 30)), array('data' => form_textfield('', "htmlarea_plugins_css][$k][css][$ck][value", $cv['value'], 30, 30)), array('data' => form_weight('', "htmlarea_plugins_css][$k][css][$ck][weight", $cv['weight'])), array('data' => form_checkbox('', "htmlarea_plugins_css][$k][css][$ck][delete", 1, 0), 'align' => 'center'));
+      }
+    }
+    $ck = count($v['css'])+1;
+    $rows_css[] = array(array('data' => form_textfield('', "htmlarea_plugins_css][$k][css][$ck][data", "", 30, 30)), array('data' => form_textfield('', "htmlarea_plugins_css][$k][css][$ck][value", '', 30, 30)), array('data' => form_weight('', "htmlarea_plugins_css][$k][css][$ck][weight", 0)), array('data' => '&nbsp'));
+    $output.= form_item($v['data'], theme("table", $header_css, $rows_css));
+  }
+  $k = count($plugins)+1;
+  $rows[] = array(array('data' => form_textfield('', "htmlarea_plugins_css][$k][data", "", 30, 30)), array('data' => form_textfield('', "htmlarea_plugins_css][$k][context", "", 30, 30)), array('data' => form_weight('', "htmlarea_plugins_css][$k][weight")), array('data' => '&nbsp;'));
+  $output = form_item('', theme("table", $header, $rows), t("list of
+  different drop boxes that will be added to the toolbar")) .$output;
+  
+  print theme("page", system_settings_form($output));
+}
+
+function htmlarea_settings_plugins_help($plugin) {
+  print theme("page", "");
+}
+
+function htmlarea_settings_array($arg) {
+  switch($arg) {
+    case "fontnames":
+      $header_data = t('font name');
+      $header_value = t('font family');
+      $page_title = t('font names');
+      break;
+    case "fontsize":
+      $header_data = t('font size');
+      $header_value = t('size');
+      $page_title = t('font size');
+      break;
+    case "formatblock":
+      $header_data = t('format block');
+      $header_value = t('value');
+      $page_title = t('format block');
+      break;
+  }
+
+  $data = variable_get("htmlarea_$arg", _htmlarea_defaults($arg));
+  usort($data, "_htmlarea_sort");
+  // add blank last row
+  $data[] = array('data' => '', 'value' => '', 'weight' => '');
+
+  $form['htmlarea_' . $arg] = array('#tree' => TRUE,);
+  foreach ($data as $k => $v) {
+    $form['htmlarea_' . $arg][$k]['data'] = array(
+      '#type' => 'textfield',
+      '#default_value' => $v['data'],
+      '#size' => 20,
+      '#maxlength' => 20,
+    );
+    $form['htmlarea_' . $arg][$k]['value'] = array(
+      '#type' => 'textfield',
+      '#default_value' => $v['value'],
+      '#size' => 20,
+      '#maxlength' => 20,
+    );
+    $form['htmlarea_' . $arg][$k]['weight'] = array(
+      '#type' => 'weight',
+      '#default_value' => $v['weight'],
+    );
+    $form['htmlarea_' . $arg][$k]['delete'] = array(
+      '#type' => 'checkbox',
+      '#return_value' => 1,
+      '#default_value' => 0,
+    );
+  }
+  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['buttons']['reset'] = array('#type' => 'submit', '#value' => t('Reset to defaults') );
+
+  $form['args'] = array('#tree' => TRUE);
+  $form['args']['name'] = array(
+    '#type' => 'value',
+    '#value' => $arg,
+  );
+  $form['args']['header'] = array(
+    '#type' => 'value',
+    '#value' => array($header_data, $header_value, t('weight'), t('delete')),
+  );
+
+  return $form;
+}
+
+function theme_htmlarea_settings_array(&$form) {
+  if (isset($form['args']['name']['#value'])) {
+    $var = 'htmlarea_' . $form['args']['name']['#value'];
+    $header = $form['args']['header']['#value'];
+
+    foreach (element_children($form[$var]) as $key) {
+      $row = array();
+      if (is_array($form[$var][$key]['data'])) {
+        $row[] = drupal_render($form[$var][$key]['data']);
+        $row[] = drupal_render($form[$var][$key]['value']);
+        $row[] = drupal_render($form[$var][$key]['weight']);
+        $row[] = drupal_render($form[$var][$key]['delete']);
+      }
+      $rows[] = $row;
+    }
+    $output = theme('table', $header, $rows);
+  }
+  $output .= drupal_render($form);
+
+  return $output;
+}
+
+function htmlarea_settings_array_submit($form_id, $form_values) {
+  // unset any thing that was deleted
+  $arg = $form_values['args']['name'];
+  foreach ($form_values['htmlarea_' . $arg] as $k => $v) {
+    if ($v['delete'] == '1' || $v['data'] == '') {
+      unset($form_values['htmlarea_' . $arg][$k]);
+    }
+  }
+  // remove our temp values
+  unset($form_values['args']);
+
+  system_settings_form_submit($form_id, $form_values);
+  drupal_goto('admin/settings/htmlarea/' . $arg);
+}
+
+function htmlarea_settings_custom() {
+  $form['htmlarea_customjs'] = array(
+    '#type' => 'textarea',
+    '#title' => t('custom javascript'),
+    '#default_value' => variable_get('htmlarea_customjs', ''),
+    '#cols' => 80,
+    '#rows' => 15,
+    '#description' => t('Enter any javascript that you wish execute before the HTMLArea.makeEditors is called'),
+  );
+  return system_settings_form($form);
+}
+
+/*
+ * Internal Functions
+ */
+
+/**
+ * find where the js has been put. 
+ */
+function _htmlarea_get_jsdir() {
+  static $path = FALSE;
+  
+  if (!$path && ($files = file_scan_directory(drupal_get_path('module', 'htmlarea'), '^(htmlarea.js|XinhaCore.js)$', array('.', '..', 'CVS', '.svn'), 0, TRUE, 'name', 1))) {
+    if (isset($files['XinhaCore'])) {
+      $path = dirname($files['XinhaCore']->filename);
+    }
+    else {
+      $path = dirname($files['htmlarea']->filename);
+    }
+  }
+  return $path;
+}
+
+function _htmlarea_load_editor() {
+  static $loaded = FALSE;
+
+  if (!$loaded) {
+    drupal_add_css(drupal_get_path('module', 'htmlarea') .'/htmlarea.css');
+    $settings['htmlarea'] = array(
+      'base' => base_path(),
+      'path' => base_path() ._htmlarea_get_jsdir(),
+      'use_xinha' => file_exists(_htmlarea_get_jsdir(). '/XinhaCore.js'),
+      'killWordOnPaste' => variable_get("htmlarea_killwordonpaste", false),
+      'pageStyle' => variable_get("htmlarea_bodystyle", ""),
+      'toolbar' => array(),
+    );
+
+    if (variable_get('htmlarea_usestyle', 1)) {
+      $styles = array();
+      foreach (drupal_add_css() as $media => $type) {
+        if (in_array($media, array('all', 'screen')) !== FALSE) {
+          foreach ($type as $method => $css) {
+            foreach ($css as $style => $enabled) {
+              if ($enabled) {
+                $styles[] = base_path(). $style;
+              }
+            }
+          }
+        }
+      }
+      $settings['htmlarea']['styles'] = $styles;
+    }
+
+    $toolbar = _htmlarea_build_toolbar(false);
+    $toolbar = array_filter($toolbar, '_htmlarea_filter_toolbar');
+
+    $buttons = array();
+    foreach ($toolbar as $button) {
+      if ($button['data'] == 'linebreak') {
+        if (variable_get("htmlarea_add_linebreak", TRUE)) {
+          $buttons[] = 'linebreak';
+        }
+        $settings['htmlarea']['toolbar'][] = $buttons;
+        $buttons = array();
+      }
+      $buttons[] = $button['data'];
+    }
+    
+    $settings['htmlarea']['toolbar'][] = $buttons;
+
+    
+    if ($fontname = variable_get("htmlarea_fontnames", NULL)) {
+      $fonts["&mdash; font &mdash;"] = '';
+      foreach ($fontname as $v) {
+        $fonts[$v['data']] = $v['value'];
+      }
+      $settings['htmlarea']['fontname'] = $fonts;
+    }
+    
+    if ($fontsize = variable_get("htmlarea_fontsize", NULL)) {
+      $size["&mdash; size &mdash;"] = '';
+      foreach ($fontsize as $v) {
+        $size[$v['data']] = $v['value'];
+      }
+      $settings['htmlarea']['fontsize'] = $size;
+    }
+    
+    if ($blockformat = variable_get("htmlarea_formatblock", NULL)) {
+      $block["&mdash; format &mdash;"] = '';
+      foreach ($blockformat as $v) {
+        $block[$v['data']] = $v['value'];
+      }
+      $settings['htmlarea']['formatblock'] = $block;
+    }
+    
+    if ($js = variable_get('htmlarea_customjs', NULL)) {
+      $settings['htmlarea']['custom'] = $js;
+    }
+    drupal_add_js("var _editor_url='{$settings['htmlarea']['path']}/'\nvar _editor_lang='en'\n", 'inline');
+    drupal_add_js(drupal_get_path('module', 'htmlarea') .'/htmlarea.js', 'module');
+    if ($settings['htmlarea']['use_xinha']) {
+      drupal_add_js(_htmlarea_get_jsdir() .'/XinhaCore.js', 'module', 'footer');
+    }
+    else {
+      drupal_add_js(_htmlarea_get_jsdir() .'/htmlarea.js', 'module', 'footer');
+    }
+    
+    if ($plugin_list = variable_get('htmlarea_plugins', NULL)) {
+      $plugins = array();
+      foreach ($plugin_list as $d => $a) {
+        if ($a['enable']) {
+          $plugins[] = $a['name'];
+          $plugin = strtolower(preg_replace_callback('/([a-z])([A-Z])([a-z])/', '_htmlarea_plugin_preg', $a['name']));
+          $filename = $d .'/' .$plugin .".js";
+          if (file_exists($filename)) {
+            drupal_add_js($filename, 'module', 'footer');
+            $filename = $d .'/lang/' ._htmlarea_lang() .'.js';
+            if (file_exists($filename)) {
+              drupal_add_js($filename, 'module', 'footer');
+            }
+            else {
+              $filename = $d .'/lang/en.js';
+              if (file_exists($filename)) {
+                drupal_add_js($filename, 'module', 'footer');
+              }
+            }
+          }
+        }
+      }
+    }
+    if (isset($plugins)) {
+      $settings['htmlarea']['plugins'] = $plugins;
+    } 
+    drupal_add_js($settings, 'setting');
+    $loaded = TRUE;
+  }
+}
+
+function _htmlarea_filter_toolbar($a) {
+  return $a['enabled'];
+}
+
+function _htmlarea_defaults($field) {
+  global $htmlarea_codeview, $base_url;
+
+  switch($field) {
+    case "options":
+      return array(
+        array("data" => "fontname", "weight" => "0", "enabled" => "0"), 
+        array("data" => "fontsize", "weight" => "0", "enabled" => "0"), 
+        array("data" => "formatblock", "weight" => "0", "enabled" => "0"), 
+        array("data" => "bold", "weight" => "1", "enabled" => "1"), 
+        array("data" => "italic", "weight" => "1", "enabled" => "1"), 
+        array("data" => "underline", "weight" => "1", "enabled" => "1"), 
+        array("data" => "strikethrough", "weight" => "2", "enabled" => "1"), 
+        array("data" => "separator", "weight" => "2", "enabled" => "1"), 
+        array("data" => "subscript", "weight" => "2", "enabled" => "1"), 
+        array("data" => "superscript", "weight" => "2", "enabled" => "1"), 
+        array("data" => "separator", "weight" => "3", "enabled" => "1"), 
+        array("data" => "copy", "weight" => "4", "enabled" => "0"), 
+        array("data" => "cut", "weight" => "4", "enabled" => "0"), 
+        array("data" => "paste", "weight" => "4", "enabled" => "0"), 
+        array("data" => "undo", "weight" => "4", "enabled" => "0"), 
+        array("data" => "redo", "weight" => "5", "enabled" => "0"), 
+        array("data" => "removeformat", "weight" => "5", "enabled" => "0"), 
+        array("data" => "killword", "weight" => "6", "enabled" => "0"), 
+        array("data" => "linebreak", "weight" => "8", "enabled" => "1"), 
+        array("data" => "justifyleft", "weight" => "6", "enabled" => "1"), 
+        array("data" => "justifycenter", "weight" => "7", "enabled" => "1"), 
+        array("data" => "justifyright", "weight" => "7", "enabled" => "1"), 
+        array("data" => "justifyfull", "weight" => "8", "enabled" => "1"), 
+        array("data" => "separator", "weight" => "3", "enabled" => "1"), 
+        array("data" => "orderedlist", "weight" => "8", "enabled" => "1"), 
+        array("data" => "unorderedlist", "weight" => "8", "enabled" => "1"), 
+        array("data" => "outdent", "weight" => "9", "enabled" => "1"), 
+        array("data" => "indent", "weight" => "10", "enabled" => "1"), 
+        array("data" => "separator", "weight" => "10", "enabled" => "1"), 
+        array("data" => "forecolor", "weight" => "11", "enabled" => "1"), 
+        array("data" => "hilitecolor", "weight" => "11", "enabled" => "1"), 
+        array("data" => "textindicator", "weight" => "11", "enabled" => "1"), 
+        array("data" => "separator", "weight" => "12", "enabled" => "1"), 
+        array("data" => "createlink", "weight" => "13", "enabled" => "1"), 
+        array("data" => "insertimage", "weight" => "13", "enabled" => "0"), 
+        array("data" => "inserttable", "weight" => "13", "enabled" => "1"), 
+        array("data" => "inserthorizontalrule", "weight" => "14", "enabled" => "0"), 
+        array("data" => "htmlmode", "weight" => "15", "enabled" => "1"), 
+        array("data" => "popupeditor", "weight" => "15", "enabled" => "1"), 
+        array("data" => "showhelp", "weight" => "15", "enabled" => "1"), 
+        array("data" => "about", "weight" => "16", "enabled" => "1"));
+      break;
+    case "fontnames":
+      return array(
+        array('data' => 'Arial', 'value' => 'arial,helvetica,sans-serif', 'weight' => '0'),
+        array('data' => 'Courier New', 'value' => 'courier new,courier,monospace', 'weight' => '0'),
+        array('data' => 'Georgia', 'value' => 'georgia,times new roman,times,serif', 'weight' => '0'),
+        array('data' => 'Tahoma', 'value' => 'tahoma,arial,helvetica,sans-serif', 'weight' => '0'),
+        array('data' => 'Times New Roman', 'value' => 'times new roman,times,serif', 'weight' => '0'),
+        array('data' => 'Verdana', 'value' => 'verdana,arial,helvetica,sans-serif', 'weight' => '0'),
+        array('data' => 'Impact', 'value' => 'impact', 'weight' => '1'),
+        array('data' => 'WingDings', 'value' => 'wingdings', 'weight' => '1')
+        );
+      break;
+    case "fontsize":
+      return array(
+        array('data' => '1 (8 pt)', 'value' => '1', 'weight' => '0'),
+        array('data' => '2 (10 pt)', 'value' => '2', 'weight' => '0'),
+        array('data' => '3 (12 pt)', 'value' => '3', 'weight' => '0'),
+        array('data' => '4 (14 pt)', 'value' => '4', 'weight' => '0'),
+        array('data' => '5 (18 pt)', 'value' => '5', 'weight' => '0'),
+        array('data' => '6 (24 pt)', 'value' => '6', 'weight' => '0'),
+        array('data' => '7 (36 pt)', 'value' => '7', 'weight' => '0')
+        );
+      break;
+    case "formatblock":
+      return array(
+        array('data' => 'Heading 1', 'value' => 'h1', 'weight' => '0'),
+        array('data' => 'Heading 2', 'value' => 'h2', 'weight' => '0'),
+        array('data' => 'Heading 3', 'value' => 'h3', 'weight' => '0'),
+        array('data' => 'Heading 4', 'value' => 'h4', 'weight' => '0'),
+        array('data' => 'Heading 5', 'value' => 'h5', 'weight' => '0'),
+        array('data' => 'Heading 6', 'value' => 'h6', 'weight' => '0'),
+        array('data' => 'Normal', 'value' => 'p', 'weight' => '1'),
+        array('data' => 'Address', 'value' => 'address', 'weight' => '2'),
+        array('data' => 'Formated', 'value' => 'pre', 'weight' => '2')
+        );
+      break;
+    }
+}
+
+function _htmlarea_build_toolbar($cfg = false) {
+  $toolbar = variable_get("htmlarea_toolbar", NULL);
+  if (!$toolbar) {
+    $toolbar = _htmlarea_calc_weights(_htmlarea_defaults('options'));
+  }
+  elseif ($cfg) {
+    $icons = array(); $calcweights = false;
+    foreach ($toolbar as $item) {
+      $icons[] = $item['data'];
+    }
+    foreach (_htmlarea_calc_weights(_htmlarea_defaults('options')) as $item) {
+      if ($item['data'] != 'linebreak' && 
+          $item['data'] != 'space' &&
+          $item['data'] != 'separator' &&
+          !in_array($item['data'], $icons)) {
+        $toolbar[] = $item;
+        $calcweights = true;
+      }
+    }
+    if ($calcweights) {
+      $toolbar = _htmlarea_calc_weights($toolbar);
+    }
+  }
+  return $toolbar;
+}
+
+function _htmlarea_calc_weights($toolbar, $weight = 0) {
+  $last = null;
+  foreach ($toolbar as $k => $v) {
+    if ($last != null && strcmp($last, $v['data']) > 0) {
+      $weight++;
+    }
+    $last = $v['data'];
+    $toolbar[$k]['weight'] = $weight;
+  } 
+  if ($weight > 20) {
+    $toolbar = _htmlarea_calc_weights($toolbar, $weight - 20);
+  } 
+  return $toolbar;
+}
+
+function _htmlarea_is_changed($name = '') {  
+  global $user;
+  static $textarea;
+
+  if (_htmlarea_bad_browser() || (isset($user->htmlarea_isenabled) && $user->htmlarea_isenabled == 0) || (!isset($user->htmlarea_isenabled) && !variable_get("htmlarea_user_default", true)) || !_htmlarea_get_jsdir()) {
+    return false;
+  }
+  $path = drupal_get_path_alias($_GET['q']) .'.';
+  if ($name != '') {
+    $path .= form_clean_id($name);
+    $regexp = '/^('. preg_replace(array('/(\r\n?|\n)/', '/\\\\\*/', '/(^|\|)\\\\<front\\\\>($|\|)/'), array('|', '.*', '\1'. variable_get('site_frontpage', 'node') .'\2'), preg_quote(variable_get('htmlarea_display', "admin/*"), '/')) .')$/';
+    $ret = !(variable_get('htmlarea_visibility', 0) xor preg_match($regexp, $path));
+    if ($ret) {
+      $textarea = true;
+    } 
+    return $ret;
+  }
+  else {
+    return $textarea ? true : false;
+  }
+}
+
+function _htmlarea_lang() {
+  global $user;
+  if (module_exists('locale')) {
+    if ($user->language) {
+      if (file_exists(_htmlarea_get_jsdir()."/lang/$user->language.js")) {
+        return $user->language;
+      }
+    }
+    elseif (module_exists('i18n')) {
+      $ulang = _i18n_get_lang();
+      if (file_exists(_htmlarea_get_jsdir()."/lang/$ulang.js")) {
+        return $ulang;
+      }
+    }
+    else {
+      $langs = (locale_supported_languages());
+      $ulang = key($langs['name']);
+      if (file_exists(_htmlarea_get_jsdir()."/lang/$ulang.js")) {
+        return $ulang;
+      }
+    }
+  }
+  return 'en';
+}
+
+function _htmlarea_plugin_preg($m) {
+  return $m[1] .'-' .$m[2]. $m[3];
+}
+
+function _htmlarea_sort($a, $b) {
+  return ($a['weight'] > $b['weight'] ? 1 : ($a['weight'] < $b['weight'] ? -1 : (strcmp($a['data'], $b['data']))));
+}
+
+function _htmlarea_sort_plugins($a, $b) {
+  return strcmp($a->basename, $b->basename);
+}
+
+// This is a temporary function to get around a bug in htmlarea 3.0beta
+// which will crash IE5.00 browsers
+
+function _htmlarea_bad_browser() {
+
+  if (strpos($_SERVER['HTTP_USER_AGENT'], "Safari")) {
+    return true;
+  }
+
+  if (strpos($_SERVER['HTTP_USER_AGENT'], "MSIE 5.0")) {
+    return true;
+  }
+
+  return false;
+}
+
+?>

@@ -1,0 +1,41 @@
+/* $Id: site_user_list.css,v 1.1.2.2.2.2 2007/05/18 20:03:33 pukku Exp $ */
+
+fieldset.site-user-list-checkboxes-form div.form-item {
+    display: inline;
+}
+fieldset.site-user-list-checkboxes-form label {
+	white-space: nowrap;
+}
+
+fieldset#site-user-list-results p#site-user-list-results-count {
+    margin: 0;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+div.site-user-list-results-filter {
+    font-size: 0.9em;
+    margin-top: 0.5em;
+    font-style: italic;
+}
+
+div.site-user-list-results-filter p {
+    margin: 0;
+    line-height: 100%;
+}
+
+div.site-user-list-results-filter ul {
+    margin: 0;
+}
+
+div.site-user-list-results-filter ul li {
+	background: none;
+	list-style-type: circle;
+	list-style-position: inside;
+	line-height: 100%;
+	padding-left: 0.5em;
+}
+
+fieldset.site-user-list-settings-fields-fieldset fieldset legend {
+	font-weight: bold;
+}

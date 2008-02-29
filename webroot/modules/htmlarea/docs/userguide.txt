@@ -1,0 +1,100 @@
+
+Drupal HTMLArea User Guide
+
+Gordon Heydon
+
+   Senior Consultant
+   Heydon Consulting
+
+             <gordon@heydon.com.au>
+     _________________________________________________________
+
+   Table of Contents
+   1. Introduction
+   2. Using HTMLArea
+
+        2.1. Insert Images
+        2.2. Link Documents
+     _________________________________________________________
+
+Chapter 1. Introduction
+
+   [htmlarea.png]
+     _________________________________________________________
+
+Chapter 2. Using HTMLArea
+
+2.1. Insert Images
+
+   From the main editor screen click on the [ed_image.png] icon
+   and the windows will popup allowing you to choose and image.
+
+   [htmlarea_Insert_image.png]
+   (1) 
+          Categories Selection
+          Use this the pull down classes menu to choose the
+          category that you wish to select an image from. Once
+          you have selected the required option you will then be
+          presented a with a list of images from this category.
+          By selecting the required image the image properties
+          will be populated ready to insert the image.
+   (2) 
+          Image Properties
+          these fields are used to set how the image is going to
+          be layed out on the page. Setting these will change how
+          the <img> tag is going to be build which will impact on
+          the display of the image.
+   (3) 
+          Image Upload
+          If the selected image is not included in the current
+          image gallery you are able to upload an image. This
+          image that is uploaded will be attached to the currect
+          category. Populate the description and the name of the
+          file that you wish to upload. Click the upload button
+          and the file will be uploaded and inserted into the
+          image gallery.
+
+          Note
+
+   If no description is entered, then the name of the file will
+   be used as the description.
+   (4) 
+          Image Preview
+          This area is populated when an image is selected from
+          the image list or the preview button is selected.
+     _________________________________________________________
+
+2.2. Link Documents
+
+   From the main editor screen click on the [ed_link.png] icon
+   and the windows will popup allowing you to choose and image.
+
+   [htmlarea_Insert_link.png]
+   (1) 
+          Link Properties
+          these fields are used to set how the image is going to
+          be layed out on the page. Setting these will change how
+          the <a> tag is going to be build which will impact on
+          the display of the image.
+   (2) 
+          Categories Selection
+          Use this the pull down classes menu to choose the
+          category that you wish to select an image from. Once
+          you have selected the required option you will then be
+          presented a with a list of images from this category.
+          By selecting the required image the image properties
+          will be populated ready to insert the image.
+   (3) 
+          Document Upload
+          If the selected document is not included in the current
+          category you are able to upload a document. This
+          document that is uploaded will be attached to the
+          currect category. Populate the description and the name
+          of the file that you wish to upload. Click the upload
+          button and the file will be uploaded and inserted into
+          the document list.
+
+          Note
+
+   If no description is entered, then the name of the file will
+   be used as the description.

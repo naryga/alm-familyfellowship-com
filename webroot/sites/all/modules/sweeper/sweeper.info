@@ -1,0 +1,4 @@
+; $Id: sweeper.info,v 1.0 2007/07/25 20:55:35 dries Exp $
+name = Sweeper
+description = Allows setting up the sweeper accounts and downloading the sweeper client.
+dependencies = profile

@@ -1,0 +1,590 @@
+# LANGUAGE translation of Drupal (quotes.module)
+# Copyright 2006 Riccardo Riccardi <webmaster@jsdir.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: Traduzione Italiana di Drupal (quotes.module)\n"
+"POT-Creation-Date: 2005-01-25 13:30+0200\n"
+"PO-Revision-Date: 2006-01-30 14:05+0100\n"
+"Last-Translator: Uccio <ucciopan@aicomputer.it>\n"
+"Language-Team: Drupalitalia.org <webmaster@jsdir.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-Language: Italian\n"
+"X-Poedit-Country: ITALY\n"
+
+#: quotes.module:77;91;108;149;352;385;872;0
+msgid "quotes"
+msgstr "citazioni"
+
+#: quotes.module:81
+msgid "add"
+msgstr "aggiungi"
+
+#: quotes.module:86
+msgid "import"
+msgstr "importa"
+
+#: quotes.module:97
+msgid "RSS feed"
+msgstr "sorgente RSS"
+
+#: quotes.module:103
+msgid "my quotes"
+msgstr "Mie citazioni"
+
+#: quotes.module:113
+msgid "overview"
+msgstr "visione d'insieme"
+
+#: quotes.module:119
+msgid "configure blocks"
+msgstr "configura i blocchi"
+
+#: quotes.module:124
+msgid "add block"
+msgstr "aggiungi un blocco"
+
+#: quotes.module:130
+msgid "configure quote block"
+msgstr "configura il blocco delle citazioni"
+
+#: quotes.module:135
+msgid "delete quote block"
+msgstr "cancella il blocco delle citazioni"
+
+#: quotes.module:145
+msgid "upgrade"
+msgstr "aggiorna"
+
+#: quotes.module:161
+msgid "quote"
+msgstr "citazione"
+
+#: quotes.module:191
+msgid "Display in quote blocks"
+msgstr "Mostra nel blocco delle citazioi"
+
+#: quotes.module:196
+msgid "Format"
+msgstr "Formato"
+
+#: quotes.module:196
+msgid "Tab-separated text"
+msgstr "Testo separato da tabulazione"
+
+#: quotes.module:196
+msgid "Fortune file"
+msgstr "Fortune file"
+
+#: quotes.module:197;211;400;418;957
+msgid "Quotes"
+msgstr "Citazioni"
+
+#: quotes.module:215
+msgid "Quote"
+msgstr "Citazione"
+
+#: quotes.module:216
+msgid "Author"
+msgstr "Autore"
+
+#: quotes.module:235
+msgid "Please enter a quote."
+msgstr "Inserisci una citazione"
+
+#: quotes.module:240
+msgid "Please enter the quote data to import."
+msgstr "Inserisci le citazioni da importare."
+
+#: quotes.module:252;933;959;1027;1127
+msgid "Submit"
+msgstr "Procedi"
+
+#: quotes.module:267
+msgid "Only the first %d quotes were imported."
+msgstr "Solo le prime %d citazioni sono state importate"
+
+#: quotes.module:281
+msgid "%type: added %title."
+msgstr "%type: aggiunti %title."
+
+#: quotes.module:281
+msgid "view"
+msgstr "vedi"
+
+#: quotes.module:294
+msgid "1000 quotes imported. %remaining existing quotes remaining to be imported."
+msgstr "1000 citazioni importate. Rimancono %remaining citazioni da importare"
+
+#: quotes.module:307
+msgid "The quotes module has been upgraded from version %old to version %new. %count existing quotes were successfully imported."
+msgstr "Il modulo \"quotes\" e' stato aggiornato dalla versione %old alla %new. Sono state importate con successo $count citazioni gia' presenti."
+
+#: quotes.module:310
+msgid "%count quotes imported."
+msgstr "%count citazioni importate."
+
+#: quotes.module:353;650
+msgid "%name's quotes"
+msgstr "Citazioni di %name"
+
+#: quotes.module:369
+msgid "The quotes that will be imported are displayed below."
+msgstr "Le citazioni che saranno importate verranno mostrate sotto"
+
+#: quotes.module:370
+msgid "%d quotes will be imported:"
+msgstr "$d citazioni saranno importate:"
+
+#: quotes.module:385
+msgid "View the latest quotes."
+msgstr "Vedi le ultime citazini"
+
+#: quotes.module:389
+msgid "%username's quotes"
+msgstr "Citazioni inserite da %username"
+
+#: quotes.module:389;400
+msgid "View %username's quotes."
+msgstr "Vedi le citazioni inserite da %username"
+
+#: quotes.module:400
+msgid "History"
+msgstr "Storico"
+
+#: quotes.module:400
+msgid "view %user's quotes"
+msgstr "ved le citazioni di %user"
+
+#: quotes.module:442
+msgid "A quote is a famous, humorous, witty, infamous, or otherwise noteworthy quotation or fortune file entry. Quotes can be entered one at a time or mass imported in either tab-separated text or fortune file format."
+msgstr "Una citazione e' una frase famosa, umoristica, brillante o comunque degna di nota. In Drupal anche un \"fortune file\" (una sorta di raccolta) viene considerata \"citazione\" dal momento che e' possibile importarli. Le Citazioni possono essere inserite in Drupal singolarmente o importate in blocco da un file di testo (blocchi separati da tabulatore) o da un file in formato <a href='http://www.google.it/search?hl=it&q=%22fortune+file%22&btnG=Cerca+con+Google&meta=lr%3Dlang_it' title='Che ne dice Google...' onclick='window.open(this.href);return false;'>\"Fortune file\"</a>"
+
+#: quotes.module:445
+msgid "Use the form below to enter a single quote. Multiple quotes can also be %link in either tab-separted text or fortune file format."
+msgstr "Usa il modulo che segue per inserire una singola citazione. Inserimenti in blocco possono essere %link sotto forma di file (testi separati da tabulazioni) o in formato \"fortune file\""
+
+#: quotes.module:445
+msgid "mass imported"
+msgstr "importate in blocco"
+
+#: quotes.module:520
+msgid ""
+"\n"
+"<p>\n"
+"  This page is designed to mass import your existing quotes from\n"
+"  Drupal 4.4 or earlier. Many quotes will be imported in this one step\n"
+"  by creating an individual node for each imported quote. See the\n"
+"  notes below for more information.\n"
+"</p>\n"
+"<p><strong>Notes:</strong></p>\n"
+"<ul>\n"
+"  <li>\n"
+"    The form below is designed to automatically import 1000 existing\n"
+"    quotes at a time. If you have more than 1000 existing quotes, you\n"
+"    will be returned to this page after each 1000-quote submission to\n"
+"    import the next batch.\n"
+"  </li>\n"
+"  <li>\n"
+"    The body field below shows the quotes that will be imported in a\n"
+"    tab-separated text format. You do not need to modify this\n"
+"    field. Performing a preview will display the quotes as they will\n"
+"    be imported.\n"
+"  </li>\n"
+"  <li>\n"
+"    Any settings used in the form below (comment, moderation, sticky,\n"
+"    input format, categories, etc.) will be applied to all upgraded\n"
+"    quotes.\n"
+"  </li>\n"
+"  <li>\n"
+"    The title entered below will be applied to all quotes. You can use\n"
+"    the variable <em>%id</em> in the title which will be replaced by\n"
+"    the newly-created quote's node ID.\n"
+"  </li>\n"
+"  <li>\n"
+"    If the path module is enabled, you cannot create a path alias\n"
+"    while importing, as the import will attempt to use the same path\n"
+"    for every quote.\n"
+"  </li>\n"
+"</ul>\n"
+msgstr ""
+"\n"
+"<p>\n"
+"  Da questa pagina potete importare in blocco le vostre citazioni da\n"
+"  Drupal 4.4 o precedenti. Molte citazioni saranno importate in un unico\n"
+"  passo creando un nodo per ogni citazione importata. Leggete con atten-\n"
+"  zione le note che seguono per maggiori informazioni.\n"
+"</p>\n"
+"<p><strong>Note:</strong></p>\n"
+"<ul>\n"
+"  <li>\n"
+"    Il modulo che segue e' realizzato per importare automaticamente\n"
+"    1000 citazioni per volta. Se avete piu' di 1000 citazioni nel vostro\n"
+"    attuale database, ritornerete a questa pagina piu' volte finche' non\n"
+"    le avrete importate tutte (1000 per volta piu' le restanti finali).\n"
+"  </li>\n"
+"  <li>\n"
+"    Il campo qui sotto mostra le citazioni che saranno importate usando\n"
+"    il tabulatore come separatore nelle righe. <strong>Non dovete modificare\n"
+"    questo campo</strong>. Usate l'anteprima per vedere le citazioni nel\n"
+"    formato finale prima di importarle effettivamente.\n"
+"  </li>\n"
+"  <li>\n"
+"    Ogni impostazione usata nel modulo che segue (commento, moderazine, \n"
+"    sticky, formato di input, categorie, etc.) sara' applicata a tutte le\n"
+"    citazioni aggiornate.\n"
+"  </li>\n"
+"  <li>\n"
+"    Il titolo inserito qui sotto sara' assegnato a tutte le citazioni.\n"
+"    Potete usare la variabile <em>%id</em> nel titolo che sara' sostituita\n"
+"    da ogni nuovo ID creato per la citazione importata.\n"
+"  </li>\n"
+"  <li>\n"
+"    Se il modulo \"path\" e' abilitato, non potete creare un alias per la \n"
+"    path mentre imortate, perche' l'importazione cerchera' di usare la \n"
+"    stessa path per ogni citazione.\n"
+"  </li>\n"
+"</ul>\n"
+
+#: quotes.module:560
+#: quotes.module:563
+msgid "Displayed below is the status of the quotes module."
+msgstr "Questo e' lo stato attuale del modulo \"Citazioni\" (\"Quotes\")"
+
+#: quotes.module:566
+msgid ""
+"\n"
+"You can define any number of blocks that will each display either a\n"
+"randomly-selected quote or the most-recent quote. The quotes displayed\n"
+"in each block can be restricted to certain node IDs, roles, users, or\n"
+"categories. Each block has a name that is used only for identification\n"
+"on the %link and a title that is shown when the block is\n"
+"displayed. The block title can contain the variable <em>%title</em>\n"
+"which will be replaced by the selected quote's title.\n"
+msgstr ""
+"\n"
+"Potete definire un numero qualsiasi di blocchi ognuno dei quali mostrerà\n"
+"una citazione (la più recente o a selezione casuale). Le citazini mostrate\n"
+"in ogni blocco possono essere filtrate usando come criterio: l'ID del\n"
+"nodo, i ruoli (utente), l'utente inseritore o le categorie (\"vocabularies\").\n"
+"Ogni blocco ha un nome usato solo per identificarlo nel %link ed un titolo\n"
+"visualizzato quando il blocco è visibile nel sito. Il titolo del blocco\n"
+"può contenere la variabile <em>%title</em> che sarà sostituita dal titolo\n"
+"della citazione selezionata.\n"
+
+#: quotes.module:574
+msgid "block administration page"
+msgstr "pagina di gestione dei blocchi"
+
+#: quotes.module:577
+msgid "Use the form below to define a new quote block."
+msgstr "Usa il modulo che segue per definire un nuovo blocco per le citazioni."
+
+#: quotes.module:579
+msgid ""
+"\n"
+"The quotes module allows users to maintain a list of quotations that\n"
+"they find notable, humorous, famous, infamous, or otherwise worthy of\n"
+"sharing with website visitors. The quotes can be displayed in any\n"
+"number of administrator-defined blocks. These blocks will display\n"
+"quotes based on the restrictions of each block. Blocks can be\n"
+"configured to restrict to certain nodes, roles, users, or categories.\n"
+msgstr ""
+"\n"
+"Il modulo Citazioni (\"Quotes\") consente di gestire una lista di frasi\n"
+"ritenute famose, umoristiche, infami, brillanti, o comunque degne di\n"
+"nota e meritevoli di essere condivise con i visitatori del sito. Le\n"
+"citazioni possono essere visualizzate in qualsiasi blocco a discrezio-\n"
+"ne dell'amministratore del sito. I blocchi mostreranno le citazioni in\n"
+"base ai privilegi assegnati ad ogni blocco. I blocchi possono essere\n"
+"configurati perché compaiano in base al nodo, al ruolo, l'utente o la\n"
+"categoria (\"vocabularies\") del contenuto\n"
+
+#: quotes.module:634
+msgid "creation date"
+msgstr "data di creazione"
+
+#: quotes.module:634
+msgid "title"
+msgstr "titolo"
+
+#: quotes.module:634
+msgid "author"
+msgstr "autore"
+
+#: quotes.module:635
+msgid "ascending"
+msgstr "ascendente"
+
+#: quotes.module:635
+msgid "descending"
+msgstr "discendente"
+
+#: quotes.module:660
+msgid "Sort by: "
+msgstr "Ordinato per: "
+
+#: quotes.module:663
+msgid "Quotes per page: "
+msgstr "Citazioni per pagina: "
+
+#: quotes.module:665
+msgid "Go"
+msgstr "Vai"
+
+#: quotes.module:667
+msgid "Display options"
+msgstr "Mostra le opzioni"
+
+#: quotes.module:864
+msgid "%user's quotes"
+msgstr "citazioni di %user"
+
+#: quotes.module:896
+msgid "Parse error on quote %d."
+msgstr "Analizza l'errore sulla citazione %d."
+
+#: quotes.module:916
+msgid "Please select a valid import format."
+msgstr "Scegli un formato d'importazine valido."
+
+#: quotes.module:927;948
+msgid "Install"
+msgstr "Installa"
+
+#: quotes.module:928;944
+msgid "Upgrade"
+msgstr "Aggiorna"
+
+#: quotes.module:935
+msgid "Settings successfully saved."
+msgstr "Le nuove impostazioni sono state salvate"
+
+#: quotes.module:943
+msgid "<p>The quotes module must be upgraded to continue.  Press <em>Upgrade</em> to create the new database tables and import your existing quotes.</p>"
+msgstr "<p>Il modulo per le citazioni dev'essere aggiornato per continuare. Clicca su <em>Aggiorna</em> per creare la nuova tabella nel database ed importare le citazioni gi esistenti. </p>"
+
+#: quotes.module:947
+msgid "<p>The quotes module must be installed to continue.  Press <em>Install</em> to proceed</p>"
+msgstr "<p>Il modulo per le citazioni dev'essere installato per continuare. Clicca su <em>Installa</em> per continuare.</p>"
+
+#: quotes.module:955
+msgid "Status"
+msgstr "Stato"
+
+#: quotes.module:955
+msgid "Installed"
+msgid_plural "Installed"
+msgstr[0] "Installato"
+msgstr[1] "Installati"
+
+#: quotes.module:956
+msgid "Version"
+msgstr "Versione"
+
+#: quotes.module:958
+msgid "Author leader"
+msgstr "Autore principale"
+
+#: quotes.module:958
+msgid "The text placed before the author attribution (i.e. \"&amp;mdash;\" for an em-dash or \"&amp;#8226;\" for a bullet)."
+msgstr "Il testo inserito prima dell'attribuzione all'autore (ad esempio \"&amp;mdash;\" scrive un trattino o \"&amp;#8226;\" scrive un pallino)"
+
+#: quotes.module:969;1014
+msgid "Save"
+msgstr "Salva"
+
+#: quotes.module:972
+msgid "Please enter a name"
+msgstr "Inserisci il nome"
+
+#: quotes.module:979
+msgid "Blocks successfully updated."
+msgstr "I blocchi sono stati aggiornati."
+
+#: quotes.module:982;1090
+msgid "Name"
+msgstr "Nome"
+
+#: quotes.module:982
+msgid "Title"
+msgstr "Titolo"
+
+#: quotes.module:982
+msgid "Filters"
+msgstr "Filtri"
+
+#: quotes.module:982
+msgid "Operations"
+msgstr "Operazioni"
+
+#: quotes.module:990
+msgid "node"
+msgstr "nodo"
+
+#: quotes.module:994
+msgid "role"
+msgstr "ruolo"
+
+#: quotes.module:998
+msgid "user"
+msgstr "utente"
+
+#: quotes.module:1002
+msgid "term"
+msgstr "parola"
+
+#: quotes.module:1008
+msgid "none"
+msgstr "nessuno"
+
+#: quotes.module:1009
+msgid "configure"
+msgstr "configura"
+
+#: quotes.module:1010
+msgid "delete"
+msgstr "cancella"
+
+#: quotes.module:1017
+msgid "No blocks are defined."
+msgstr "Non e' stato creato alcun blocco."
+
+#: quotes.module:1037
+msgid "Please enter a block name."
+msgstr "Inserisci un nome per il blocco"
+
+#: quotes.module:1042
+msgid "Please enter valid node IDs."
+msgstr "Inserisci un riferimento di nodo valido."
+
+#: quotes.module:1052
+msgid "Block <em>%name</em> successfully updated."
+msgstr "Il blocco <em>%name</em> e' stato aggiornato"
+
+#: quotes.module:1056
+msgid "Block <em>%name</em> could not be updated."
+msgstr "Il blocco <em>%name</em> non puo' essere aggiornato"
+
+#: quotes.module:1063
+msgid "Block <em>%name</em> successfully created."
+msgstr "Il blocco <em>%name</em> e' stato creato"
+
+#: quotes.module:1067
+msgid "Block <em>%name</em> could not be created."
+msgstr "Il blocco <em>%name</em> non puo' essere creato"
+
+#: quotes.module:1087
+msgid "Anonymous"
+msgstr "Anonimo"
+
+#: quotes.module:1090
+msgid "Enter a unique name for this block. This will identify the block on the %link."
+msgstr "Inseirsci un nome univoco per questo blocco. Il nome identifichera' il blocco nel %link."
+
+#: quotes.module:1091
+msgid "Block title"
+msgstr "Titolo del blocco"
+
+#: quotes.module:1091
+msgid "Enter the title that will be used for this block when displayed. If desired, you can include the string <em>%title</em> which will be replaced by the title of the quote being displayed in the block."
+msgstr "Scrivi il titolo da usare per questo blocco quando e' visualizzato. Puoi anche inserire la sola stringa <em>%title</em> che sara' sostituita dal titolo della citazione visualizzata nel blocco al momento."
+
+#: quotes.module:1092
+msgid "Type"
+msgstr "Tipo"
+
+#: quotes.module:1092
+msgid "Random"
+msgstr "Casuale"
+
+#: quotes.module:1092
+msgid "Most recent"
+msgstr "Piu' recente"
+
+#: quotes.module:1093
+msgid "Node filter"
+msgstr "Filtra in base ai nodi"
+
+#: quotes.module:1093
+msgid "To restrict this block to display only certain quotes based on node IDs, enter the IDs here separated by commas, spaces, or returns."
+msgstr "Costringe il blocco a mostrare solo citazioni basate sul numero (\"ID\") del nodo, inserisci uno o piu' numeri (\"ID\") di nodo separati da virgole, spazi o \"Invio\"."
+
+#: quotes.module:1096;1099
+msgid "Role filter"
+msgstr "Filtra in base ai ruoli"
+
+#: quotes.module:1096
+msgid "To restrict this block to display only quotes submitted by users in specific roles, select the roles here."
+msgstr "Costringe il blocco a mostrare solo citazioni inserite da utenti con specifici ruoli (privilegi), seleziona uno o piu' ruoli per il filtro."
+
+#: quotes.module:1099
+msgid "There are no roles configured with the <em>edit own quotes</em> permission, so no roles are available. To filter by role, please assign this permission to at least one role on the %link."
+msgstr "A nessun ruolo e' stato assegnato il privilegio <em>\"edit own quotes\" (\"gestisci le tue citazioni\")</em> nel pannello dei permessi, quindi nessun ruolo e' disponibile. Per attivare il filtro per ruolo devi prima concedere questo permesso nella %link"
+
+#: quotes.module:1099
+msgid "permission administration page"
+msgstr "pagina di gestione dei permessi"
+
+#: quotes.module:1103;1106
+msgid "User filter"
+msgstr "Filtro utente"
+
+#: quotes.module:1103
+msgid "To restrict this block to display only quotes submitted by specific users, select the users here."
+msgstr "Costringe il blocco a mostrare solo citazioni inserite da specifici utenti, seleziona uno o piu' utenti qui."
+
+#: quotes.module:1106
+msgid "There are no users with the <em>edit own quotes</em> permission, so no users are available. To filter by user, please assign at least one user to a role with this permission on the %link."
+msgstr "A nessun utente e' stato assegnato il privilegio <em>\"edit own quotes\" (\"gestisci le tue citazioni\")</em> nel pannello dei permessi, quindi nessun utente e' disponibile. Per usare il filtro utenti, devi prima concedere questo permesso nella %link."
+
+#: quotes.module:1106
+msgid "user administration page"
+msgstr "pagina di gestione utenti"
+
+#: quotes.module:1120;1123
+msgid "Category filter"
+msgstr "Filtro per categoria"
+
+#: quotes.module:1120
+msgid "To restrict this block to display only quotes in specific categories, select the categories here."
+msgstr "Costringe questo blocco a mostrare solo citazioni di una specifica categoria (\"vocabularies\"), seleziona qui una o piu' categorie da cui scegliere."
+
+#: quotes.module:1123
+msgid "There are no vocabularies assigned to quotes. To filter by categories, please assign at least one vocabulary to quotes on the %link."
+msgstr "Non ci sono categorie (\"vocabularies\") assegnate alle citazioni. Per attivare il filtro categorie devi prima assegnare (o creare apposta) una categoria alle citazini nella %link."
+
+#: quotes.module:1123
+msgid "category administration page"
+msgstr "pagina di gestione delle categorie"
+
+#: quotes.module:1140;1147
+msgid "Delete"
+msgstr "Cancella"
+
+#: quotes.module:1142
+msgid "Block <em>%name</em> deleted."
+msgstr "Il blocco <em>%name</em> e' stato cancellato."
+
+#: quotes.module:1146
+msgid "<p>Are you sure you want to delete the block <em>%name</em>?"
+msgstr "<p style='font-color : #c00 ; font-weight : bold ; ''>Sei sicuro di vloer cancellare il blocco em>%name</em>?"
+
+#: quotes.module:281
+msgid "special"
+msgstr "speciale"
+
+#: quotes.module:63
+msgid "administer quotes"
+msgstr "gestisce le citazioni"
+
+#: quotes.module:63
+msgid "edit own quotes"
+msgstr "gestisce le proprie citazioni"
+
+#: quotes.module:63
+msgid "promote quotes to block"
+msgstr "promuove le citazioni al blocco"
+

@@ -1,0 +1,21 @@
+$Id: TODO.txt,v 1.5 2005/10/07 13:35:34 gordon Exp $
+
+Critical
+--------
+- Rewrite htmlarea so that it makes better use of the new drupal js
+  extensions and the new formapi.
+
+Important
+---------
+- Add ability to start and stop Xinha from a chackbox.
+- Modify the UploadImage plugin to convert the <img> tags into [img] tags so
+  that they can be modified by the image filtering system. This will be done
+  by using the image_filter module. This will actually check and make sure
+  that the image_filter module is enabled before it uses it.
+
+Completed
+---------
+- create js for drupal to load drupal plugins without having to move them to
+  the xinha plugin directory.
+- Interface with fscache to allow images to be uploaded in put into nodes.
+- Allow users to edit paramters for plugins.

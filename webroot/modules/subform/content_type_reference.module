@@ -1,0 +1,176 @@
+<?php
+
+/**
+ * @file
+ * Defines a cck field type for referencing a content type.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function content_type_reference_help($section) {
+  switch ($section) {
+    case 'admin/help#content_type_reference':
+      return t('This module provides a new cck field type that provides a drop down list of all cck content types in the system and alows selection of one.');
+    case 'admin/modules#description':
+      return t('<strong>CCK:</strong> Defines a field type for referencing a content type. <em>Note: Requires content.module.</em>');
+  }
+}
+
+/**
+ * Implementation of hook_field_info().
+ */
+function content_type_reference_field_info() {
+  return array(
+    'content_type_reference' => array('label' => 'Content Type Reference'),
+  );
+}
+
+
+/**
+ * Implementation of hook_field_settings().
+ */
+function content_type_reference_field_settings( $op, $field ) {
+  switch ($op)
+  {
+    case 'database columns':
+      $columns = array(
+        'cn' => array('type' => 'varchar', 'length' => 128, 'not null' => TRUE, 'default' => '\'\''),
+      );
+      return $columns;
+  }
+}
+
+/**
+ * Implementation of hook_field().
+ */
+function content_type_reference_field($op, &$node, $field, &$items, $teaser, $page) {
+  switch ($op) {
+    case 'view':
+      foreach ($items as $delta => $item) {
+        $items[$delta]['view'] = content_format($field, $item, 'default', $field);
+      }
+      return theme('field', $field, $field, $items, $teaser, $page);
+  }
+}
+
+/**
+ * Implementation of hook_field_formatter_info().
+ */
+function content_type_reference_field_formatter_info() {
+  return array(
+    'default' => array(
+      'label' => 'Content Type Reference',
+      'field types' => array('content_type_reference'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_formatter().
+ */
+function content_type_reference_field_formatter($field, $item, $formatter, $field) {
+
+  $text = '';
+  
+  if (isset($item['cn'])) {
+    $fields = _content_type_reference_get_content_types();
+    $referenced_field = $fields[ $item['cn'] ];
+    if ( $referenced_field ) {
+      $text = $referenced_field;
+    }
+  }
+
+  switch ($formatter) {
+    
+    default:
+      return strip_tags($text);
+  }
+}
+
+
+
+
+
+
+/**
+ * Implementation of hook_widget_info().
+ */
+function content_type_reference_widget_info() {
+  return array(
+    'content_type_reference' => array(
+      'label' => 'Select List',
+      'field types' => array('content_type_reference'),
+    )
+  );
+}
+
+/**
+ * Implementation of hook_widget().
+ */
+function content_type_reference_widget($op, &$node, $field, &$field_field) {
+  switch ($op) {
+    case 'prepare form values':
+      $field_field_transposed = content_transpose_array_rows_cols($field_field);
+      $field_field['default cn'] = $field_field_transposed['cn'];
+      break;
+
+    case 'form':
+      $form = array();
+
+      $form[$field['field_name']] = array('#tree' => TRUE);
+      $form[$field['field_name']]['cn'] = array(
+        '#type' => 'select',
+        '#title' => t($field['widget']['label']),
+        '#default_value' => $field_field['default cn'],
+        '#multiple' => $field['multiple'],
+        '#options' => _content_type_reference_get_content_types(),
+        '#required' => $field['required'],
+        '#description' => $field['widget']['description'],
+      );
+
+      return $form;
+
+    case 'process form values':
+      if ($field['multiple']) {
+        $field_field = content_transpose_array_rows_cols(array('cn' => $field_field['cn']));
+      }
+      else {
+        $field_field[0]['cn'] = $field_field['cn'];
+      }
+      // Remove the widget's data representation so it isn't saved.
+      unset($field_field['cn']);
+  }
+}
+
+/**
+ * Return an array of all content types
+ */
+function _content_type_reference_get_content_types() {
+  
+  $fieldsResult = db_query('select
+                            	type_name, label
+                            from
+                            	node_type_content
+                            order by
+                            	label');
+  while ($obj = db_fetch_object($fieldsResult)) {
+    $fieldsList[ $obj->type_name ] = $obj->label;
+  }
+  return $fieldsList;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

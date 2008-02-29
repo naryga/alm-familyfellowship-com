@@ -1,0 +1,10 @@
+; $Id: htmlarea.info,v 1.1.2.2 2007/06/18 23:54:50 dww Exp $
+name = "HTMLArea"
+description = "Allows Drupal to use the htmlarea to replace textarea fields"
+
+
+; Information added by drupal.org packaging script on 2007-11-11
+version = "5.x-2.x-dev"
+project = "htmlarea"
+datestamp = "1194782619"
+

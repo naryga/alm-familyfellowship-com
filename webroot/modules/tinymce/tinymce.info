@@ -1,0 +1,10 @@
+; $Id: $
+name = TinyMCE
+description = The most popular WYSIWYG editor for advanced content editing.
+
+
+; Information added by drupal.org packaging script on 2007-07-31
+version = "5.x-1.9"
+project = "tinymce"
+datestamp = "1185893413"
+

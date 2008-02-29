@@ -1,0 +1,35 @@
+$Id: INSTALL.txt,v 1.7 2005/11/13 03:19:51 gordon Exp $
+
+Installation
+------------
+
+Installation Instructions
+
+1. Copy this entire directory to the modules directory in your drupal
+   installation and make sure that it is accessible by the web server. 
+2. download Xinha from http://xinha.python-hosting.com/wiki/DownloadsPage 
+   and unpack it into your htmlarea module directory. This should create a
+   folder named "xihna", "xinha-nightly" or "xihna-latest" within the
+   "htmlarea" folder.
+3. Enable the htmlarea module in drupal admin/modules.
+
+Configuration
+-------------
+admin/settings/htmlarea
+
+Default for new Textareas - this determines the default status for any new
+   new textarea fields. The default value is enabled then the new textarea
+   will automatically be changed to a htmlarea.
+
+Body Style - Determines the style of the htmlarea body.
+
+ToolBars - allows the system administrator to set up all the icons that can
+   be made available to the user. The lest select box is a list of all
+   valid options, and the right is your corrent configuration. Use the
+   buttons to add/delete and manipulate order.
+
+Contact
+-------
+
+Gordon Heydon <gordon@heydon.com.au>
+     

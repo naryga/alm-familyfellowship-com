@@ -1,0 +1,17 @@
+/* $Id: faq.css,v 1.1.2.6 2007/04/23 09:44:31 snpower Exp $ */
+.faq_category_indent {
+  padding-left: 20px;
+}
+.faq_more_link {
+  font-size: 0.85em;
+  margin-left: 30em;
+  margin-top: 0;
+  margin-bottom: -1.25em;
+  text-align: right;
+}
+.faq_top_link {
+  font-size: 0.8em;
+  margin-top:0;
+  margin-bottom: 0;
+  padding-bottom: 1.0em;
+}

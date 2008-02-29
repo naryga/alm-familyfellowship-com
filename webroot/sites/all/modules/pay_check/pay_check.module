@@ -1,0 +1,448 @@
+<?php
+// $Id: sweeper.module,v 1.189.2.1 2007/07/25 19:09:58 dries Exp $
+
+/**
+ * @file
+ * Support for configurable user profiles.
+**/
+
+/**
+ * Private field, content only available to privileged users.
+ * define('PROFILE_PRIVATE', 1);
+**/
+
+/**
+ * Implementation of hook_help().
+**/
+function pay_check_help($section) 
+{
+  switch ($section) {
+    case 'admin/help#pay_check':
+      $output = '<p>'. t('The sweeper module creates the sweeper account once billing is complete and allows customers to download the client.') .'</p>';
+      return $output;
+    case 'admin/user/pay_check':
+      return '<p>'. t('Here you can define custom fields that users can fill in in their user profile (such as <em>country</em>, <em>real name</em>, <em>age</em>, ...).') .'</p>';
+  }
+}
+
+// function onthisdate_perm()
+
+
+/**
+ * Implementation of hook_menu().
+**/
+function pay_check_menu($may_cache) 
+{
+  $items = array();
+
+  if ($may_cache) 
+  {
+		$items[] = array('path' => 'check_payment',
+				'title' => t('CHECK THOSE PAYMENTS'),
+				'callback' => 'pay_check_all',
+				'access' => user_access(''),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'flip_the_users',
+				'title' => t('Filter Login Information Changes'),
+				'callback' => 'pay_check_flopper',
+				'access' => user_access(''),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'flip_all_the_users',
+				'title' => t('Account Confirmation'),
+				'callback' => 'pay',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'delete_incomplete',
+				'title' => t('Delete all Incomplete Users'),
+				'callback' => 'pay_check_remove_incomplete',
+				'access' => user_access(''),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'payment',
+				'title' => t('Check Out'),
+				'callback' => 'sweeper_subscription_create',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'change_card',
+				'title' => t('Change Credit Cards'),
+				'callback' => 'sweeper_change_card',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'change_plan',
+				'title' => t('Change Subscription Plan'),
+				'callback' => 'sweeper_change_plan',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'my_account/edit',
+				'title' => t('Edit Contact Info'),
+				'callback' => 'sweeper_edit_user',
+				'access' => user_access('access sweeper'),
+				'type' => MENU_CALLBACK
+		);		
+		$items[] = array('path' => 'customer_care/account_password_retrieval',
+						'title' => t('Retreive your My Account Password'),
+						'callback' => 'sweeper_account_password_retrieval',
+						'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'customer_care/profile_password_retrieval',
+						'title' => t('Retreive your Profile Manager Password'),
+						'callback' => 'sweeper_profile_password_retrieval',
+						'access' => true,
+						'type' => MENU_CALLBACK
+		);				
+		$items[] = array('path' => 'customer_care/profile_security_retrieval',
+						'title' => t('Retreive your Profile Security Q & A'),
+						'callback' => 'sweeper_profile_security_retrieval',
+						'access' => true,
+						'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'customer_care/contact',
+						'title' => t('Thank you for contacting Customer Care'),
+						'callback' => 'sweeper_customer_care_contact',
+						'access' => true,
+						'type' => MENU_CALLBACK
+		);
+		$items[] = array('path' => 'send_page',
+				'title' => t('Send this page to a friend'),
+				'callback' => '_sweeper_email_page',
+				'access' => user_access(''),
+				'type' => MENU_CALLBACK
+		);
+		
+  }
+
+  return $items;
+}
+
+/**
+ * Sweeper download page main content.
+ * 
+ * Validates that the user payment went through, creates the sweeper account, 
+ * and sets the flags in the DB that both have been accomplished.  Also sends 
+ * an email when this is accomplished.
+ * 
+ * Contains the link to the client download.
+**/
+function pay_check_all() 
+{
+	include('aid_interface.php');
+	include($_SERVER['DOCUMENT_ROOT']."/sites/all/modules/sweeper/sweeper_account.php");
+	global $user;
+	
+	//$debug variable is used to easily turn off debugging code and output
+	$debug = true;
+	
+	$content = "<h3>CHECK THE PAYMENT STATUS</h3>";
+	if ($debug == true or $debug == 'local'):
+	
+		$content .=
+		'<a href="/check_payment/?x_invoice_num=101_33603&x_response_code=1&x_amount=5.95">Click here to test a successfull $5.95</a>'."\n".
+		'<a href="/check_payment/?x_invoice_num=101_33595&x_response_code=2&x_amount=5.95">Click here to test a failed $5.95</a>'."\n".
+		'<a href="/check_payment/?x_invoice_num=101_&x_response_code=2&x_amount=5.95">Click here to test a non aid (fail)</a>'."\n".
+		'<a href="/check_payment/?x_invoice_num=101_&x_response_code=1&x_amount=5.95">Click here to test a non aid (pass)</a>'."\n";
+
+	endif;
+	
+	if (count($_REQUEST) > 1) {
+		mail("nathan@ashleafmedia.com", "[FamilyFellowship.com silent URL test settings, initial]","what did I tell you? it worked.  Check it out.  Another email should follow.");
+
+		$invoice_array = explode('_', $_REQUEST['x_invoice_num']);
+		$id = $invoice_array[0];
+		
+		// Load user data if it's not there
+		$account = user_load(array('uid'=>$id));
+		echo "<pre>";
+		print_r($account);
+		echo "</pre>";
+		print_r($invoice_array);
+		if ($invoice_array[1] != null && ($_REQUEST['x_response_code'] == 1 /* || $debug == true*/)) 
+		{
+			echo "<h2>We're in...</h2>";
+			$aid = $invoice_array['1'];
+
+
+			$aid_commission = new AIDInterface;
+
+			switch ($_REQUEST['x_amount']) 
+			{
+				case '5.95':
+					$cm1 = '1.00';
+					break;
+				case '15.95':
+					$cm1 = '3.00';
+					break;
+				case '27.95':
+					$cm1 = '6.00';
+					break;
+				case '49.95':
+					$cm1 = '12.00';
+					break;
+				default:
+					$cm1 = '1.00';
+					break;
+			}
+
+			$did_it_work = $aid_commission->reportCommission($_REQUEST['x_amount'], $_REQUEST['x_invoice_num'], $aid, $cm1);
+
+			$aid_commission->destruct();
+			$body .= "A commission is to be paied to the affiliate with aid {$invoice_array['1']}\n";
+		} 
+		elseif($_REQUEST['x_response_code'] == 2) 
+		{
+			$did_it_work = "no it didn't";
+			
+			$login = $account->profile_sweeper_username;
+			$pass = $account->profile_sweeper_password;
+			$email = $account->mail;
+			$f_name = $account->profile_first_name;
+			$l_name = $account->profile_last_name;
+			
+			_pay_check_set_payment_flag(false, $id);
+			
+			_sweeper_set_role('delinquent', $account->uid, array('active', 'canceled'));
+			$sweep = new SweeperAccount;
+			$two_weeks_from_now = mktime(0,0,0,date("m"),date("d")+14,date("Y"));
+			$ttl = date('Y-m-d+00:00:00', $two_weeks_from_now);
+			$body .= "\n The Renewal for {$account->name} has failed.  The client needs to be notified.  Their account has been flagged as unpaid.  An Expire Date should be set for their Filter Account.";
+			$body2 = 
+			
+			"Hi, {$account->profile_first_name} \n\n".
+			
+			"We just tried to process your {$account->profile_current_plan} ".
+			"FamilyFellowship.com Internet Filter subscription but your credit ".
+			"card transaction was declined.\n\n".
+			
+			"HERE'S WHAT HAPPENS NEXT:\n".
+			"First, your FamilyFellowship.com account will be set to expire in ".
+			"14 days.  Your My Account page at FamilyFellowship.com will remain ".
+			"accessible with limited functionality so you willl be able to ".
+			"update your credit card information.\n\n".
+
+			"UPDATE YOUR CARD\n".
+			"You can update your credit card info or enter a brand new card at: ".
+			"http://{$_SERVER['SERVER_NAME']}/change_card\n\n".
+			
+			"AFTER 14 DAYS:\n".
+			"If you haven't updated your credit card information with in 14 ".
+			"days your filter account will expire.  Any computers that still ".
+			"have the FamilyFellowship.com Filter Client still installed will ".
+			"be unable to access the Internet at this point.\n\n".
+
+			"NEED TO CANCEL YOUR ACCOUNT?\n".
+			"If you wish to cancel your FamilyFellowship.com account, first ".
+			"uninstall the Filter Client from all of your computers.  Then log ".
+			"in at:\n\n".
+			"http://{$_SERVER['SERVER_NAME']}/my_account.\n\n".
+			"Then click the \"Cancel My Account\" link. ".
+			"Once you cancel you won't be charged again.\n\n".
+			
+			"If you have any questions, please feel free to contact us at ".
+			"http://familyfellowship.com/customer_care\n\n".
+
+			"Thank you.\n\n".
+
+			"-The FamilyFellowship.com Customer Care Team\n".
+			" http://familyfellowship.com/customer_care";
+			
+			$body3 = 
+			"The most recent subscription renual for {$account->name} has been ".
+			"declined\n\n".
+			
+			"The user has been notified, and their account has been marked ".
+			"delinquent.  Their sweeper account ".
+			"({$account->profile_sweeper_username}) should have a 14 day ".
+			"expiration date set.";
+			
+			mail("nathan@ashleafmedia.com", "[FamilyFellowship.com delenquency user test mail]",$body2);
+			mail("nathan@ashleafmedia.com", "[FamilyFellowship.com delenquency dave test mail]",$body3);
+			// if($sweep->editAccount($login, array('ttl'=>$ttl)))
+			if($sweep->addAccount($login, $pass, $email, $f_name, $l_name, $ttl))
+			{
+			// 	$body .= "\n The sweeper account was successfully edited.";
+			// } else {
+			// 	$body .= "\n The sweeper account was not successfully edited.";
+			echo "it works, it works";
+			}
+		}
+		
+
+
+		$content .= "Here are the results, folks\n";
+
+
+		foreach ($_REQUEST as $id => $value){
+			$body.= "$id >> $value \n\n";
+			
+		}
+		
+		
+		$body .= $did_it_work;
+		$content .= $did_it_work;
+
+		mail("nathan@ashleafmedia.com", "[FamilyFellowship.com silent URL test settings]",$body);
+	}
+	return $content;
+	
+}
+
+function pay_check_flopper($id)
+{
+	$account = user_load($id);
+	$post_fields = "profile_first_name={$account->profile_first_name}&profile_middle_name={$account->profile_middle_name}&profile_last_name={$account->profile_last_name}";
+	$comand = $_SERVER['SERVER_NAME']."/user/197/edit/Step+3%3A+My+Contact+Information";
+	$init = $curl_init();
+	curl_setopt($this->connection, CURLOPT_URL, $command);
+	curl_setopt($this->connection, CURLOPT_AUTOREFERER, 1);
+	curl_setopt($this->connection, CURLOPT_FOLLOWLOCATION, 1);
+	curl_setopt($this->connection, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt($this->connection, CURLOPT_POST, 1);
+	curl_setopt($this->connection, CURLOPT_POSTFIELDS, $post_fields);
+	$result = curl_exec($init);
+	return $result;
+}
+
+function pay_check_flipp_all()
+{
+	$query = "select uid from users";
+	
+}
+
+
+
+/**
+ * Sets the flag that indicates the user has paid for their account.
+ * $status boolean whether payment has been processed
+ * returns true if operation successful, false on an error
+**/
+function _pay_check_set_payment_flag($status,$user_id) 
+{
+	if($status){
+		$status = "1";
+	} else {
+		$status = "0";
+	}
+	
+	$result = db_query("select fid from profile_fields where name = 'profile_payment'");
+	$field_data = db_fetch_array($result);
+	db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id);
+	db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $status);
+	$result = true;
+	return $result;
+}
+
+function _pay_check_set_value($field, $value, $user_id)
+{
+	$result = mysql_query("select fid from profile_fields where name = '$field'");
+	if($field_data = mysql_fetch_array($result))
+	{
+		if (db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $field_data['fid'], $user_id)) {
+			if (db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $field_data['fid'], $user_id, $value)) {
+				$result = true;
+			} else {
+				die("The MySQL Server reported and error: ".mysql_error()." Or maybe we just don't like db_query 2"); //$result = false;
+			} 
+		} else {	
+			die("The MySQL Server reported and error: ".mysql_error()." Or maybe we just don't like db_query 1");//$result = false;
+		}
+	} else {	
+		die("The MySQL Server reported and error: ".mysql_error()." Or maybe we just don't like db_fetch_array");//$result = false;
+	}
+	return $result;
+}
+
+function pay_check_remove_incomplete()
+{
+	$content = "<h3>List of deleted users:</h3>\n<ul>";
+	$query = "SELECT uid FROM users";
+	$result = mysql_query($query);
+	while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+		$account = user_load(array('uid' => $row['uid']));
+		$is_admin = array_key_exists('3', $account->roles);
+		$is_active = array_key_exists('9', $account->roles);
+		$is_delinquent = array_key_exists('7', $account->roles);
+		$is_canceled = array_key_exists('8', $account->roles);
+		if (!$is_admin && !$is_active && !$is_delinquent && !$is_canceled && $account->uid != 1) {
+			$content .= "<li>{$account->name} ({$account->mail})</li>";
+			user_delete(null, $account->uid);
+		}
+		unset($account);
+	}
+	$content .= "</ul>";
+	return $content;
+}
+
+/**
+ * Callback function for admin mass blocking users.
+**/
+function _pay_check_user_block($uid) 
+{
+  // foreach ($accounts as $uid) {
+    $account = user_load(array('uid' => $uid));
+    // Skip blocking user if they are already blocked.
+    if ($account !== FALSE && $account->status == 1) {
+      user_save($account, array('status' => 0));
+    }
+  // }
+}
+
+/**
+ * Gets the value for the requested field and user.
+ * $field is the field name that needs to be retrieved.
+ * $userid is the $user->uid of the person that will be checked
+ * returns string with the value
+**/
+function _pay_check_get_profile_value($field,$userid) 
+{
+	$sql = "select v.value from profile_fields f, profile_values v where f.name = '".$field."' and f.fid = v.fid and v.uid = ".$userid." ";
+	$results = db_query($sql);
+	if($results){
+		$item = db_fetch_array($results);
+		$value = $item['value'];
+	} else { // end if $results
+		$value = false;
+	}
+	return $value;
+}
+
+function _pay_check_verify_sweeper($login)
+{
+	include_once("../sweeper/sweeper_account.php");
+	$sweep = new SweeperAccount;
+	$result = $sweep->verifyAccount($login);
+	return $result;
+}
+
+/**
+ * Implementation of hook_user()
+ * Only functions on user deletion
+**/
+// function pay_check_user($op, &$edit, &$account, $category = NULL)
+// {
+// 	switch ($op) {
+// 		case "delete":
+// 			_sweeper_cancel_sweeper($account->profile_sweeper_username);
+// 			break;
+// 
+// 		case "after_update":
+// 			//set sweeper password if username and password are synced;
+// 			break;
+// 
+// 		default:
+// 			break;
+// 	}
+// 	
+// }
+
+function pay_check_edit_user()
+{
+	$content = "";
+	return $content;
+}
+
+?>

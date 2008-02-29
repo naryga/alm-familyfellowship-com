@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * Teaches drupal client browsers to remember fieldset collapse states across
+ * page loads
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function persistent_fieldset_help($section) {
+  switch ($section) {
+    case 'admin/help#persistent_fieldset':
+    case 'admin/modules#description':
+      return t('Provides a new forms api element that acts as a fieldset that remembers collapse state across page loads.');
+  }
+}
+
+function persistent_fieldset_elements() {
+
+  $type['persistent_fieldset'] = array( '#collapsible' => TRUE, '#collapsed' => FALSE, '#input' => TRUE );
+  return $type;
+
+}
+
+/**
+ * Format a group of form items.
+ *
+ * @param $element
+ *   An associative array containing the properties of the element.
+ *   Properties used: attributes, title, value, description, children, collapsible, collapsed
+ * @return
+ *   A themed HTML string representing the form item group.
+ */
+function theme_persistent_fieldset($element) {
+  
+  // since this fieldset was marked as having #input, the forms api populates my id and name, so i can drop that into the html
+  
+  if ($element['#collapsible']) {
+  
+    drupal_add_js('misc/collapse.js');
+    drupal_add_js('modules/subform/persistent_fieldset.js');
+
+    $element['#attributes']['class'] .= ' collapsible';
+    if ($element['#collapsed']) {
+     $element['#attributes']['class'] .= ' collapsed';
+    }
+    
+  }
+  
+  // but since it thinks i take input, some funky things happen with my #value, especially after failed form validations
+  // we don't want that
+  unset( $element['#value'] );
+
+  return '<fieldset' . drupal_attributes($element['#attributes']) . ' name="' . $element['#name'] .'" id="' . $element['#id'] .'" >' . ($element['#title'] ? '<legend>'. $element['#title'] .'</legend>' : '') . ($element['#description'] ? '<div class="description">'. $element['#description'] .'</div>' : '') . $element['#children'] . "</fieldset>\n";
+
+}

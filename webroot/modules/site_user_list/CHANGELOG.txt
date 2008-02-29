@@ -1,0 +1,111 @@
+2006 Oct 27
+    change to use module_invoke for excluded_users call
+
+2006 Oct 27
+    change to save sort information, so solving
+    http://drupal.org/node/91603
+
+2006 Nov 30
+    update to use '#name' feature of FAPI, rather than my previous
+    hack.  Also, carry across 'q' information.  This should solve
+    http://drupal.org/node/91603
+
+2007 Jan 09
+    rewrote nearly from scratch.  re-organized most of the functions,
+    also use 2-space indents.  start of work towards ability to not
+    have either table or view, although this requires subselects, which
+    mysql may not support.  modified to make either table or view
+    work.
+
+2007 Mar 29
+    fix for http://drupal.org/node/123716
+    (added DISTINCT to sql query)
+
+2007 Mar 29
+    update to Drupal 5
+
+2007 Apr 10
+    fix for http://drupal.org/node/134897
+    the {$ syntax has special meaning in a double-quoted string
+    in php.  Thanks scafmac for the fix!
+
+2007 Apr 10
+    temp fix for http://drupal.org/node/134895
+    Drupal 5 changed some stuff about $_REQUEST.
+    this fix will make things work, although there
+    should be a better way to do this.
+
+2007 Apr 11
+    - allow changing of page title, per scafmac
+      http://drupal.org/node/135409
+    - fix to suppress 'view' option if user can't view user profiles
+      http://drupal.org/node/135425
+      (also scafmac)
+      also, move some function calls outside of a loop, which should
+      make it a little faster...
+    - add ability to control placement and display of display options
+      form and search form.  see
+      http://drupal.org/node/135186 and http://drupal.org/node/135185
+    - add ability to have separate themeing function for each cell
+      http://drupal.org/node/135189
+    - get rid of functions whose only purpose is to call drupal_get_form
+
+2007 Apr 12
+    - optional display of view and edit columns, as well as title option
+      see http://drupal.org/node/135425; suggested by scafmac
+    - renamed a bunch of variables, so had to create an update function
+      to copy over old variables and delete them.
+
+2007 Apr 13
+    - Friday the 13th!
+    - Can now control which privacy settings are enforced
+      see http://drupal.org/node/135641 and http://drupal.org/node/98818
+      (same bug/feature request by Haroldc and mimetic2)
+
+2007 Apr 16
+    - change from \{$ to {' . $xxx . '}
+      the PHP manual is slightly confusing about the "complex" syntax
+      and I think that it might be clearer (not to mention solve Haggle's
+      issue in http://drupal.org/node/129426) to do it this way
+
+2007 Apr 23
+    clean up .info file as per http://drupal.org/node/137122
+    thanks jshuster!
+
+2007 May 17
+    Complete rewrite to majorly change the way things work.
+    This change will allow a number of previously hard-to-do things
+    to be done more easily.  This introduces a number of hooks to
+    allow modules to control how the data is created.  It also
+    redoes the administration interface majorly, and introduces
+    templates for presentation of cells, which (hopefully) won't be
+    too slow.  It also allows users to use a subselect query, if allowed,
+    and also does database checks.  Basically, it's the bomb!
+
+2007 May 18
+    add hook_enable to run _build
+    
+    add hidden fields, for use in other templates
+
+2007 May 20
+    fix for bug in search as per #145183 -- forgot to double '%'
+
+2007 May 21
+    update .install file to have proper initial settings
+    fix #145543 by conditional returns from hook_site_user_list_query_sql
+    fix link in hook_install drupal_set_message()
+
+2007 May 22
+    rename site_user_list_build
+
+    add site_user_list_roles.module
+
+2007 Jun 04
+    fixed #148956: added t() call.  Thanks Udgin!
+
+2007 Jun 22
+    added conditional columns, @_base and @_dest
+    this should make avatars usable.
+
+2007 July 12
+    fixed install message to specify module, per nancyw in #158807

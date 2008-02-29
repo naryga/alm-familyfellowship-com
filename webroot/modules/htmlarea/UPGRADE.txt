@@ -1,0 +1,21 @@
+$Id: UPGRADE.txt,v 1.2 2005/04/19 11:52:14 gordon Exp $ $Name: DRUPAL-5--2 $
+
+Drupal 4.5.2 -> 4.6
+-------------------------------------------------------------------------------
+* Upgrading to Drupal 4.6 the plug-ins loading mechanism has been changed so
+that they are included instead of using the HTMLArea.loadPlugin() which can
+cause some problems with some plug-ins that have not had the lang include
+file created.
+
+The other reason is that so you can load the Drupal specific plug-ins without
+having to copy them into the Xinha plug-ins directory.
+
+In doing so the format of the plug-in data has been changed, and need to be
+reset. To do this go to admin -> settings -> htmlarea -> plugins and select
+the required plug-ins.
+
+* Secondly the javascript htmlarea or Xinha are no longer distributed with the
+htmlarea module. You need to download a copy of Xinha from
+http://xinha.python-hosting.com and unpack it into the htmlarea module
+directory.
+-------------------------------------------------------------------------------

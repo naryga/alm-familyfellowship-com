@@ -1,0 +1,1407 @@
+<?php
+// $Id: site_user_list.module,v 1.1.2.6.2.27 2007/06/22 15:57:41 pukku Exp $
+
+/**
+ * @file
+ * This module displays a list of users on the site.  It's very
+ * configurable, with a lot of hooks
+ */
+ 
+ /**
+  * hook documentation
+  */
+
+ /**
+ * hook_site_user_list_fields()
+ *
+ * This hook returns a list of available fields for the user to select from.
+ * It should return an array of fields.  Each field should have an identifier,
+ * which the module can use later to determine if the belongs to the module.
+ * By convention, all the fields I've defined are prefixed with '@', and correspond
+ * to a database column with an '@'
+ *
+ * return array(
+ *   '@identifier' => array(
+ *     'display_name' => 'Display Name',
+ *     'description' => 'Description',
+ *     'db_column' => 'database column to select',
+ *     'column_header' => 'title to display',
+ *     'default_template' => 'a display template',
+ *     'eval_template' => should eval be applied to the template,
+ *     'search_column' => 'the column to use for searching',
+ *     'sort_column' => 'the column to use for sorting',
+ *   )
+ * );
+ *
+ * 'display_name' is a name to use for displaying in the settings screen.
+ * 'description' should be a short description of what the field is, which is shown on the settings screen.
+ * 'db_column' should be the name of the database column to select to display the value
+ * 'column_header' is the column title to display at the top of listing
+ * 'default_template' is the template to use for this field.
+ * 'eval_template' should be true if the default_template should be 'eval'd.
+ * 'search_column' should be the column to search on.
+ * 'sort_column' should be the column to use for sorting.
+ *
+ * Note that it's possible for hook_site_user_list_query_sql to return multiple columns for each
+ * database column.  This is why there is db_column, search_column, and sort_column separately.
+ * You might want to have a date column which is displayed as 'May 12, 2007', but sort on a version
+ * which is stored as '2007-05-12'.
+ * Note that some of these values can be overridden by the user.
+ *
+ */
+
+/**
+ * hook_site_user_list_query_sql($allowed = array())
+ *
+ * $allowed is an array of all the field identifiers which will be included.
+ * Modules should use this to determine what SQL to return
+ *
+ */
+
+/**
+ * hook_site_user_list_search_form($search = array())
+ */
+
+/**
+ * hook_site_user_list_restrict($search = array())
+ */
+
+define('SITE_USER_LIST_NO_DISPLAY', 0);
+define('SITE_USER_LIST_HIDDEN_DISPLAY', 1);
+define('SITE_USER_LIST_MAY_DISPLAY', 2);
+define('SITE_USER_LIST_DEFAULT_DISPLAY', 3);
+define('SITE_USER_LIST_ALWAYS_DISPLAY', 4);
+
+/**
+ * Implementation of hook_perm()
+ */
+function site_user_list_perm() {
+  return array('view site user list');
+}
+
+/**
+ * Implementation of hook_menu()
+ */
+function site_user_list_menu($may_cache) {
+  $items = array();
+
+  if ($may_cache) {
+    $items = array(
+      array(
+        'path' => 'admin/settings/site_user_list',
+        'title' => t('Site user list'),
+        'description' => t('Change settings for the site user list'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('site_user_list_admin_settings_form'),
+        'access' => user_access('administer site configuration'),
+        'type' => MENU_NORMAL_ITEM,
+      ),
+      array(
+        'path' => 'admin/settings/site_user_list/general',
+        'title' => t('General'),
+        'weight' => -100,
+        'type' => MENU_DEFAULT_LOCAL_TASK,
+      ),
+      array(
+        'path' => 'admin/settings/site_user_list/fields',
+        'title' => t('Fields'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('site_user_list_fields_form'),
+        'access' => user_access('administer site configuration'),
+        'type' => MENU_LOCAL_TASK,
+      ),
+
+      array(
+        'path' => 'site_user_list',
+        'title' => variable_get('site_user_list_title', t('Site user list')),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('site_user_list_form'),
+        'access' => user_access('view site user list'),
+      ),
+      array(
+        'path' => 'site_user_list/rebuild',
+        'title' => t('Rebuild Site User List'),
+        'callback' => 'site_user_list_rebuild_page',
+        'access' => user_access('administer site configuration'),
+        'type' => MENU_CALLBACK,
+      ),
+    );
+    
+    /**
+     * the following items would be ideally from profile.module
+     */
+    $items[] = array(
+      'path' => 'admin/settings/site_user_list/profile',
+      'title' => t('Profile'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('profile_site_user_list_settings_form'),
+      'access' => user_access('administer site configuration'),
+      'type' => MENU_LOCAL_TASK,
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * the admin settings page
+ */
+function site_user_list_admin_settings_form() {
+  drupal_add_css(drupal_get_path('module', 'site_user_list') . '/site_user_list.css');
+  
+  $form = array();
+  
+  // store as query, view, table; use cron
+  $form['query_type_fs'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Database'),
+  );
+  // *** database views not available before MySQL 5.0
+  // *** subselect queries not available before MySQL 4.1
+  $query_type_options = array(
+    'query' => t('subselect query'),
+    'view' => t('database view'),
+    'table' => t('table'),
+  );
+  $query_type_default = 'query';
+  if (($GLOBALS['db_type'] == 'mysql') or ($GLOBALS['db_type'] == 'mysqli')) {
+    $db_version = db_version();
+    if (version_compare($db_version, '4.1', '<')) {
+      unset($query_type_options['query']);
+      unset($query_type_options['view']);
+      $query_type_default = 'table';
+    }
+    elseif (version_compare($db_version, '5.0', '<')) {
+      unset($query_type_options['view']);
+    }
+  }
+  $form['query_type_fs']['site_user_list_query_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Retrieve data from a'),
+    '#default_value' => variable_get('site_user_list_query_type', $query_type_default),
+    '#options' => $query_type_options,
+    '#description' => t('The best choice is view; query may be slow and not work, table won\'t always be up-to-date.'),
+  );
+  $form['query_type_fs']['site_user_list_use_cron'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Rebuild when cron jobs are run'),
+    '#default_value' => variable_get('site_user_list_use_cron', 0),
+    '#description' => t('Select this option if you want to rebuild the table, view, or query every time cron is run. You should only need to do this if you are using a table.'),
+  );
+  $form['query_type_fs']['rebuild_link'] = array(
+    '#type' => 'markup',
+    '#value' => t('If you wish to manually rebuild the table, view, or query, you can go to ') . l(base_path() . 'site_user_list/rebuild', 'site_user_list/rebuild'),
+    '#prefix' => '<p>',
+    '#suffix' => '</p>',
+  );
+  $form['query_type_fs']['site_user_list_log_rebuilds'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log rebuild actions'),
+    '#default_value' => variable_get('site_user_list_log_rebuilds', 0),
+    '#description' => t('If you select this option, whenever the table, view, or query is rebuilt, a log entry will be made.'),
+  );
+  
+  // general ui information
+  $form['ui_options_fs'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User Interface Options'),
+  );
+  $form['ui_options_fs']['site_user_list_title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Site user list page title'),
+    '#default_value' => variable_get('site_user_list_title', t('Site user list')),
+    '#description' => t('The title of the page listing the site users, as well as the title of the link on the navigation menu.'),
+  );
+  $form['ui_options_fs']['site_user_list_column_delta'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum column weight'),
+    '#default_value' => variable_get('site_user_list_column_delta', 20),
+    '#description' => t('The maximum weight of a column.  Note that you have twice as many weights available as this number, as you also have negative weights.  This number must be greater than zero, but less than or equal to 400.  If you need more than 800 slots, this module really isn\'t the right one for you.'),
+    '#size' => 6,
+  );
+  
+  // display elements
+  $form['display_elements_fs'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Display elements'),
+  );
+  $form['display_elements_fs']['display_form'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Display Options Form'),
+    '#weight' => variable_get('site_user_list_d_weight', -2),
+  );
+  $form['display_elements_fs']['display_form']['site_user_list_d_show'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show the display options form'),
+    '#default_value' => variable_get('site_user_list_d_show', 1),
+  );
+  $form['display_elements_fs']['display_form']['site_user_list_d_weight'] = array(
+    '#type' => 'weight',
+    '#title' => t('Weight of the display options form'),
+    '#default_value' => variable_get('site_user_list_d_weight', -2),
+    '#delta' => 5,
+  );
+  
+  $form['display_elements_fs']['search_form'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Search Form'),
+    '#weight' => variable_get('site_user_list_s_weight', -1),
+  );
+  $form['display_elements_fs']['search_form']['site_user_list_s_show'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show the search form'),
+    '#default_value' => variable_get('site_user_list_s_show', 1),
+  );
+  $form['display_elements_fs']['search_form']['site_user_list_s_weight'] = array(
+    '#type' => 'weight',
+    '#title' => t('Weight of the search form'),
+    '#default_value' => variable_get('site_user_list_s_weight', -1),
+    '#delta' => 5,
+  );
+  $form['display_elements_fs']['search_form']['site_user_list_s_before'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display the search filter above the results'),
+    '#default_value' => variable_get('site_user_list_s_before', 0),
+  );
+  $form['display_elements_fs']['search_form']['site_user_list_s_after'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display the search filter below the results'),
+    '#default_value' => variable_get('site_user_list_s_after', 0),
+  );
+  
+  
+  $form['display_elements_fs']['results_form'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Results'),
+    '#weight' => variable_get('site_user_list_r_weight', 0),
+  );
+  $form['display_elements_fs']['results_form']['site_user_list_r_show'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show the results'),
+    '#default_value' => variable_get('site_user_list_r_show', 1),
+  );
+  $form['display_elements_fs']['results_form']['site_user_list_r_weight'] = array(
+    '#type' => 'weight',
+    '#title' => t('Weight of the results'),
+    '#default_value' => variable_get('site_user_list_r_weight', 0),
+    '#delta' => 5,
+  );
+  $form['display_elements_fs']['results_form']['site_user_list_r_count'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show the number of displayed users'),
+    '#default_value' => variable_get('site_user_list_r_count', 1),
+  );
+  $form['display_elements_fs']['results_form']['site_user_list_include_blocked_users'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Include blocked users in results'),
+    '#default_value' => variable_get('site_user_list_include_blocked_users', 0),
+  );
+  $form['display_elements_fs']['results_form']['site_user_list_display_sql_query'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display the SQL query'),
+    '#default_value' => variable_get('site_user_list_display_sql_query', 0),
+  );
+  
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => 'Save configuration',
+  );
+  
+  return $form;
+}
+
+function site_user_list_admin_settings_form_validate($form_id, $data) {
+  if ($data['site_user_list_column_delta'] != '20') {
+    $cd = $data['site_user_list_column_delta'];
+    $is_error = true;
+    
+    if (is_numeric($cd)) {
+      $cd_val = $cd + 0;
+      if (is_int($cd_val) and (0 < $cd_val) and ($cd_val <= 400)) {
+        $is_error = false;
+      }
+    }
+  
+    if ($is_error) {
+      form_set_error('site_user_list_column_delta', 'The maximum weight of a column must be between 1 and 400 inclusive.');
+    }
+  }
+}
+
+function site_user_list_admin_settings_form_submit($form_id, $data) {
+  // basically just run through and set the variables
+  variable_set('site_user_list_query_type', $data['site_user_list_query_type']);
+  if ($data['site_user_list_query_type'] == 'query') {
+    variable_set('site_user_list_select_from', '');
+  }
+  else {
+    // node that we include the '{' and '}' in the name; queries include the '(' and ')'
+    variable_set('site_user_list_select_from', '{site_user_list_' . $data['site_user_list_query_type'] . '}');
+  }
+  
+  variable_set('site_user_list_use_cron', $data['site_user_list_use_cron']);
+
+  $old_log = variable_get('site_user_list_log_rebuilds', 0);
+  if ($old_log != $data['site_user_list_log_rebuilds']) {
+    watchdog('site_user_list', 'Rebuild logging ' . ($data['site_user_list_log_rebuilds'] ? 'enabled' : 'disabled'));
+  }
+  variable_set('site_user_list_log_rebuilds', $data['site_user_list_log_rebuilds']);
+  
+  variable_set('site_user_list_title', $data['site_user_list_title']);
+  cache_clear_all('*', 'cache_menu', true); // this should clear the menu cache, allowing a title change to come through
+  
+  variable_set('site_user_list_column_delta', $data['site_user_list_column_delta']);
+  
+  variable_set('site_user_list_d_show', $data['site_user_list_d_show']);
+  variable_set('site_user_list_d_weight', $data['site_user_list_d_weight']);
+
+  variable_set('site_user_list_s_show', $data['site_user_list_s_show']);
+  variable_set('site_user_list_s_weight', $data['site_user_list_s_weight']);
+  variable_set('site_user_list_s_before', $data['site_user_list_s_before']);
+  variable_set('site_user_list_s_after', $data['site_user_list_s_after']);
+
+  variable_set('site_user_list_r_show', $data['site_user_list_r_show']);
+  variable_set('site_user_list_r_weight', $data['site_user_list_r_weight']);
+  variable_set('site_user_list_r_count', $data['site_user_list_r_count']);
+  variable_set('site_user_list_include_blocked_users', $data['site_user_list_include_blocked_users']);
+  variable_set('site_user_list_display_sql_query', $data['site_user_list_display_sql_query']);
+
+  // because we've potentially changed the query type, we need to
+  // drop all the extant tables and rebuild
+  _site_user_list_drop_all();
+  site_user_list_build();
+  
+  drupal_set_message(t('The settings have been saved'));
+}
+
+/**
+ * the fields admin settings page
+ */
+function site_user_list_fields_form() {
+  drupal_add_css(drupal_get_path('module', 'site_user_list') . '/site_user_list.css');
+  
+  // get the list of available fields
+  $a_fields = module_invoke_all('site_user_list_fields');
+  foreach (array_keys($a_fields) as $f) {
+    if (!isset($a_fields[$f]['default_template'])) { $a_fields[$f]['default_template'] = $f; }
+    if (!isset($a_fields[$f]['default_template_condition_columns'])) { $a_fields[$f]['default_template_condition_columns'] = ''; }
+    $a_fields[$f]['template'] = $a_fields[$f]['default_template'];
+    $a_fields[$f]['template_condition_columns'] = $a_fields[$f]['default_template_condition_columns'];
+    $a_fields[$f]['display'] = 0;
+    $a_fields[$f]['weight'] = 0;
+  }
+
+  // then, get data saved in database, overriding defaults returned by the hook
+  $saved_query = db_query("SELECT * FROM {site_user_list_fields}");
+  while($sf = db_fetch_array($saved_query)) {
+    $f = $sf['field_identifier'];
+    $a_fields[$f]['display'] = $sf['display'];
+    $a_fields[$f]['column_header'] = $sf['column_header'];
+    $a_fields[$f]['weight'] = $sf['weight'];
+    $a_fields[$f]['eval_template'] = $sf['eval_template'];
+    $a_fields[$f]['template'] = $sf['template'];
+    $a_fields[$f]['sortable'] = $sf['sort_column'];
+    $a_fields[$f]['searchable'] = $sf['search_column'];
+    $a_fields[$f]['template_condition_columns'] = $sf['template_condition_columns'];
+  }
+  
+  $form = array();
+  
+  // something to iterate over in the submit handler
+  $form['a_fields'] = array(
+    '#type' => 'value',
+    '#value' => array_keys($a_fields),
+  );
+  
+  $form['f'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Available Columns'),
+    '#attributes' => array('class' => 'site-user-list-settings-fields-fieldset'),
+  );
+  
+  // note which columns are being used
+  $form['f']['used_p'] = array(
+    '#type' => 'markup',
+    '#value' => t('Columns being displayed'),
+    '#weight' => -1000,
+    '#prefix' => '<p>',
+    '#suffix' => '</p>',
+  );
+  
+  // note which columns are hidden
+  $form['f']['hidden_separater_hr'] = array(
+    '#type' => 'markup',
+    '#value' => '<hr />',
+    '#weight' => 500,
+    '#prefix' => '<p>&nbsp;</p>',
+  );
+  $form['f']['hidden_separater_p'] = array(
+    '#type' => 'markup',
+    '#value' => t('Hidden columns'),
+    '#weight' => 501,
+    '#prefix' => '<p>',
+    '#suffix' => '</p>',
+  );
+  
+  // we want something to separate columns which are currently displayable from
+  // those which aren't.
+  $form['f']['in_use_separater_hr'] = array(
+    '#type' => 'markup',
+    '#value' => '<hr />',
+    '#weight' => 900,
+    '#prefix' => '<p>&nbsp;</p>',
+  );
+  $form['f']['in_use_separater_p'] = array(
+    '#type' => 'markup',
+    '#value' => t('Columns not currently being used:'),
+    '#weight' => 901,
+    '#prefix' => '<p>',
+    '#suffix' => '</p>',
+  );
+  
+  foreach ($a_fields as $f => $s) {
+    // calculate the weight; default to the bottom
+    $weight = 1000;
+    if (!empty($s['display'])) {
+      // hidden fields are in the middle
+      if ($s['display'] == SITE_USER_LIST_HIDDEN_DISPLAY) {
+        $weight = 600;
+      }
+      elseif ($s['display'] > SITE_USER_LIST_HIDDEN_DISPLAY) {
+        $weight = $s['weight'];
+      }
+    }
+    // if @user_view or @user_edit aren't being displayed, put them at the very bottom
+    elseif ($f == '@user_view') {
+      $weight = 1500;
+    }
+    elseif ($f == '@user_edit') {
+      $weight = 1501;
+    }
+    
+    $form['f'][$f . '_fs'] = array(
+      '#type' => 'fieldset',
+      '#title' => t($s['display_name']),
+      '#weight' => $weight,
+      '#collapsible' => true,
+      '#collapsed' => ($s['display'] ? false : true),
+      '#tree' => true,
+    );
+    
+    // if the view or edit columns are not visible, sort them to the very bottom
+    if ((($f == '@user_view') or ($f == '@user_edit')) and (!$s['display'])) {
+      if ($f == '@user_view') {
+        $form['f'][$f . '_fs']['#weight'] = 1500;
+      }
+      elseif ($f == '@user_edit') {
+        $form['f'][$f . '_fs']['#weight'] = 1501;
+      }
+    }
+    
+    // display the description of the column
+    $form['f'][$f . '_fs']['description'] = array(
+      '#type' => 'markup',
+      '#value' => t($s['description']),
+      '#prefix' => '<p>',
+      '#suffix' => '</p>',
+    );
+    
+    $form['f'][$f . '_fs']['display'] = array(
+      '#type' => 'select',
+      '#options' => array(
+        SITE_USER_LIST_NO_DISPLAY => t('not displayed'),
+        SITE_USER_LIST_HIDDEN_DISPLAY => t('hidden'),
+        SITE_USER_LIST_MAY_DISPLAY => t('may be displayed'),
+        SITE_USER_LIST_DEFAULT_DISPLAY => t('displayed by default'),
+        SITE_USER_LIST_ALWAYS_DISPLAY => t('always display'),
+      ),
+      '#default_value' => $s['display'],
+    );
+    
+    $form['f'][$f . '_fs']['weight'] = array(
+      '#type' => 'weight',
+      '#title' => t('Column weight'),
+      '#default_value' => $s['weight'],
+      '#delta' => variable_get('site_user_list_column_delta', 20),
+    );
+    
+    $form['f'][$f . '_fs']['column_header'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Column title'),
+      '#default_value' => $s['column_header'],
+    );
+    
+    if ($s['sort_column'] != '') {
+      $can_sort = 0;
+      if ($s['display']) {
+        if ($s['sort_column'] == $s['sortable']) {
+          $can_sort = 1;
+        }
+      }
+      else {
+        if ($s['sort_column'] != '') {
+          $can_sort = 1;
+        }
+      }
+      $form['f'][$f . '_fs']['sortable'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Allow this column to be sortable'),
+        '#default_value' => $can_sort,
+      );
+    }
+    if ($s['search_column'] != '') {
+      $can_search = 0;
+      if ($s['display']) {
+        if ($s['search_column'] == $s['searchable']) {
+          $can_search = 1;
+        }
+      }
+      else {
+        if ($s['search_column'] != '') {
+          $can_search = 1;
+        }
+      }
+      $form['f'][$f . '_fs']['searchable'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Allow this column to be searchable'),
+        '#default_value' => $can_search,
+      );
+    }
+    
+    $form['f'][$f . '_fs']['template_options'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Template: ') . ($s['eval_template'] ? 'eval( ' : '') . check_plain($s['template']) . ($s['eval_template'] ? ' )' : ''),
+      '#collapsible' => true,
+      '#collapsed' => ($s['default_template'] == $s['template'] ? true : false),
+    );
+
+    $form['f'][$f . '_fs']['template_options']['template'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Template'),
+      '#default_value' => $s['template'],
+      '#description' => t('Default value: ') . check_plain($s['default_template']),
+    );
+
+    if (($f != '@user_view') and ($f != '@user_edit')) {
+      $form['f'][$f . '_fs']['template_options']['template_condition_columns'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Conditional Column'),
+        '#default_value' => $s['template_condition_columns'],
+        '#description' => t('A column which must have a non-blank value in it for the template to be run.  If the column is ==\'\', the cell will be blank.') . '  ' . t('Default value: ') . check_plain($s['default_template_condition_columns']),
+      );
+    
+      $form['f'][$f . '_fs']['template_options']['eval_template'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('use eval for this template'),
+        '#default_value' => $s['eval_template'],
+        '#description' => t('If your template should be treated as PHP, check this.  This could slow down things a <strong>lot</strong>.  PHP templates should return a value to be displayed (using "return"). The columns available are stored in "$r".  If you don\'t eval the template, it will be passed through "strtr" with the column names (like "@uid", which is guaranteed to always be there) available.'),
+      );
+    }
+    
+    $form['f'][$f . '_fs']['db_column'] = array(
+      '#type' => 'value',
+      '#value' => $s['db_column'],
+    );
+    $form['f'][$f . '_fs']['search_column'] = array(
+      '#type' => 'value',
+      '#value' => $s['search_column'],
+    );
+    $form['f'][$f . '_fs']['sort_column'] = array(
+      '#type' => 'value',
+      '#value' => $s['sort_column'],
+    );
+  }
+
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => t('Save field settings'),
+  );
+  
+  return $form;
+}
+
+function site_user_list_fields_form_submit($form_id, $data) {
+  // rather than run into any kind of cache issues, or worrying about having to figure out what
+  // changed, we'll delete everything and reinsert.  Since we're probably on the order of < 20
+  // items to be inserted, this shouldn't slow things down.
+  db_query("DELETE FROM {site_user_list_fields}");
+
+  foreach($data['a_fields'] as $f) {
+    $d = $data[$f . '_fs'];
+    $d['field_identifier'] = $f;
+    // if we shouldn't sort or search on this item, just suppress the column name
+    if (!$d['sortable']) {
+      $d['sort_column'] = '';
+    }
+    if (!$d['searchable']) {
+      $d['search_column'] = '';
+    }
+    if (!$d['template_options']['template_condition_columns']) {
+      $d['template_options']['template_condition_columns'] = '';
+    }
+    
+    if ($d['display']) {
+      db_query("INSERT INTO {site_user_list_fields} (field_identifier, display, column_header, weight, db_column, search_column, sort_column, eval_template, template_condition_columns, template)
+                VALUES ('%s', %d, '%s', %d, '%s', '%s', '%s', %d, '%s', '%s')",
+                $d['field_identifier'], $d['display'], $d['column_header'], $d['weight'],
+                $d['db_column'], $d['search_column'], $d['sort_column'], $d['template_options']['eval_template'],
+                $d['template_options']['template_condition_columns'], $d['template_options']['template']);
+    }
+  }
+  
+  site_user_list_build();
+
+  drupal_set_message(t('The settings have been saved'));
+}
+
+
+
+/**
+ * hook_cron
+ */
+function site_user_list_cron() {
+  if (variable_get('site_user_list_use_cron', 0)) {
+    site_user_list_build();
+  }
+}
+
+/**
+ * when enabling the module, run build
+ */
+function site_user_list_enable() {
+  site_user_list_build();
+}
+
+/**
+ * build the database table/view/query
+ */
+function site_user_list_build() {
+  // We always include the @uid column, even if the user doesn't want to display it
+  // This is the "unique id" / "primary key" column...
+  $cols = array(
+    'u.uid as ' . site_user_list_escape_column("@uid"),
+  );
+
+  $joins = array(
+    '{users} as u',
+  );
+
+  // never include user 0, who exists in the database for the anonymous user
+  $where = array(
+    '(u.uid != 0)',
+  );
+
+  // if we don't include blocked users, we need to filter on status = not blocked
+  if (!variable_get('site_user_list_include_blocked_users', 0)) {
+    $where[] = '(u.status = 1)';
+  }
+
+  // because modules need to know which of their fields have been included by the user, we
+  // pass them an array of all the field identifiers which should be displayed.  They
+  // should check in this array to determine which fields they need to include in the SQL
+  $valid_fields_q = db_query("SELECT field_identifier FROM {site_user_list_fields} WHERE display > %d", SITE_USER_LIST_NO_DISPLAY);
+  $valid_fields = array();
+  while($f = db_fetch_array($valid_fields_q)) {
+    $valid_fields[$f['field_identifier']] = $f['field_identifier'];
+  }
+
+  // run hook_site_user_list_query_sql and merge the results back into
+  // $cols, $joins, $where.
+  $query = module_invoke_all('site_user_list_query_sql', $valid_fields);
+  foreach ($query as $m => $items) {
+    if (!empty($items['cols'])) {
+      $cols = array_merge($cols, $items['cols']);
+    }
+    if (!empty($items['joins'])) {
+      $joins = array_merge($joins, $items['joins']);
+    }
+    if (!empty($items['where'])) {
+      $where = array_merge($where, $items['where']);
+    }
+  }
+
+  // build the SQL query that we'll use
+  $internal_sql = "SELECT DISTINCT " . implode(", ", $cols) . " "
+                . "FROM " . implode(" ", $joins) . " "
+                . "WHERE " . implode(" AND ", $where)
+                ;
+
+  // now that we've got the query, save what ever we need
+  // either by saving the query, or by creating the database items needed
+  $type = variable_get('site_user_list_query_type', 'query');
+  $name = variable_get('site_user_list_select_from', '{site_user_list_' . $type . '}');
+  $log = variable_get('site_user_list_log_rebuilds', 0);
+  if ($type == 'query') {
+    variable_set('site_user_list_select_from', '(' . $internal_sql . ')');
+    if ($log) {
+      watchdog('site_user_list', 'Rebuilt query with sql: ' . $internal_sql);
+    }
+  }
+  elseif ($type == 'view') {
+    db_query("CREATE OR REPLACE VIEW $name AS " . $internal_sql);
+    if ($log) {
+      watchdog('site_user_list', 'Rebuilt view with sql: CREATE OR REPLACE VIEW ' . $name . ' AS ' . $internal_sql);
+    }
+  }
+  elseif ($type == 'table') {
+    if (db_table_exists($name)) {
+      db_query("DROP TABLE $name");
+      if ($log) {
+        watchdog('site_user_list', 'Removed existing table with sql: DROP TABLE ' . $name);
+      }
+    }
+    db_query("CREATE TABLE $name AS " . $internal_sql);
+    if ($log) {
+      watchdog('site_user_list', 'Created table with sql: CREATE TABLE ' . $name . ' AS ' .$internal_sql);
+    }
+  }
+}
+
+/**
+ * get rid of both view and table;
+ * needed because DROP TABLE and DROP VIEW are different SQL statements
+ */
+function _site_user_list_drop_all() {
+  if (db_table_exists('{site_user_list_view}')) {
+    db_query("DROP VIEW {site_user_list_view}");
+    if (variable_get('site_user_list_log_rebuilds', 0)) {
+      watchdog('site_user_list', 'Dropped view with SQL: DROP VIEW {site_user_list_view}');
+    }
+  }
+  if (db_table_exists('{site_user_list_table}')) {
+    db_query("DROP TABLE {site_user_list_table}");
+    if (variable_get('site_user_list_log_rebuilds', 0)) {
+      watchdog('site_user_list', 'Dropped table with SQL: DROP TABLE {site_user_list_table}');
+    }
+  }
+}
+
+
+/**
+ * Show the site user list.  The main work of this function.
+ */
+function site_user_list_form() {
+  drupal_add_css(drupal_get_path('module', 'site_user_list') . '/site_user_list.css');
+
+  global $user;
+  
+  $form = array();
+
+  // if we don't have a proper setting for this, things will get ugly later on, so
+  // error out now...
+  $select_from = variable_get('site_user_list_select_from', '');
+  if ($select_from == '') {
+    drupal_set_message('This module has not been properly configured; please talk with your administrator', 'error');
+    return array();
+  }
+  
+  // some initial set up stuff for the form
+  $form['#method'] = 'get';
+  $form['q'] = array(
+    '#input' => false,
+    '#type' => 'hidden',
+    '#value' => $_REQUEST['q'],
+    '#name' => 'q',
+  );
+  $form['sort'] = array(
+    '#input' => false,
+    '#type' => 'hidden',
+    '#value' => $_REQUEST['sort'],
+    '#name' => 'sort',
+  );
+  $form['order'] = array(
+    '#input' => false,
+    '#type' => 'hidden',
+    '#value' => $_REQUEST['order'],
+    '#name' => 'order',
+  );
+  
+  // get the fields information from the database
+  $fields = array();
+  $fields_query = db_query("SELECT * FROM {site_user_list_fields} WHERE display > 0 ORDER BY weight");
+  while($f = db_fetch_array($fields_query)) {
+    $name = $f['field_identifier'];
+    $fields[$name] = $f;
+  }
+
+  // set up the fields to be selected
+  // note that this is _not_ something that other modules can affect.
+  // we also build the table column header (because I only want to iterate
+  //   through $fields once)
+  // at the same time, we determine which fields are visible
+  $display_header = array();
+  
+  $display_available = array();
+  $display = array();
+  
+  $select = array();
+  $select[] = site_user_list_escape_column("@uid"); // always select the uid
+
+  foreach ($fields as $name => $f) {
+    // determine which columns should be displayed
+    // if there is the data from the display form, use that
+    // otherwise, just take default (and always) options
+    $to_be_displayed = false;
+    if ($_REQUEST['d']) {
+      if (($f['display'] == SITE_USER_LIST_ALWAYS_DISPLAY) or ($_REQUEST['d'][$name])) {
+        $display[] = $name;
+        $to_be_displayed = true;
+      }
+    }
+    else {
+      if ($f['display'] >= SITE_USER_LIST_DEFAULT_DISPLAY) {
+        $display[] = $name;
+        $to_be_displayed = true;
+      }
+    }
+    
+    // set up the table header
+    if ($to_be_displayed) {
+      $temp_header = array();
+      if (!empty($f['column_header'])) {
+        $temp_header['data'] = $f['column_header'];
+      }
+      if (!empty($f['sort_column'])) {
+        $temp_header['field'] = site_user_list_escape_column($f['sort_column']);
+      }
+      
+      $display_header[] = $temp_header;
+    }
+    
+    // make a list of the columns whose display we can control
+    if (($f['display'] == SITE_USER_LIST_MAY_DISPLAY) or ($f['display'] == SITE_USER_LIST_DEFAULT_DISPLAY)) {
+      $display_available[$name] = $f['column_header'];
+    }
+
+    // add the column to be selected
+    // we don't duplicate @uid, and we special case @user_view and @user_edit, so
+    // in these cases we don't want to add the column
+    if (!empty($f['db_column']) and ($name != '@uid')) {
+      $select[] = site_user_list_escape_column($f['db_column']);
+    }
+  }
+
+  // get the information from modules about how to restrict the result set
+  $joins = array();
+  $where = array();
+  $descriptions = array();
+  
+  $restrictions = module_invoke_all('site_user_list_restrict', $_REQUEST['s']);
+  foreach ($restrictions as $module => $module_restrictions) {
+    if (!empty($module_restrictions['joins'])) {
+      $joins = array_merge($joins, $module_restrictions['joins']);
+    }
+    if (!empty($module_restrictions['where'])) {
+      $where = array_merge($where, $module_restrictions['where']);
+    }
+    if (!empty($module_restrictions['description'])) {
+      $descriptions = array_merge($descriptions, $module_restrictions['description']);
+    }
+  }
+  
+  // finally, build up the query
+  $sql = 'SELECT DISTINCT ' . implode(", ", $select) . ' '
+       . 'FROM ' . $select_from . ' as cd '
+       . implode(' ', $joins) . ' '
+       . (count($where) ? 'WHERE ' . implode(' AND ', $where) : '')
+       ;
+  $sql .= tablesort_sql($display_header);
+
+  $res = db_query($sql);
+
+  $rows = array();
+  
+  // some variables that we will be using below; we don't want to
+  // have a function call for every row that we can avoid; these
+  // values are static, so we can cache them.
+  $can_view = user_access('access user profiles');
+  $can_edit = user_access('administer users');
+  $destination = drupal_get_destination();
+  $base_path = base_path();
+  
+  while($r = db_fetch_array($res)) {
+    $r['@_base'] = $base_path;
+    $r['@_dest'] = $destination;
+    
+    $row = array();
+    
+    foreach ($display as $f) {
+      // we special case @user_view and @user_edit because we want to do
+      // wacky things with them
+      if (($f != '@user_view') and ($f != '@user_edit')) {
+        $template_condition_ok = true;
+        if (!empty($fields[$f]['template_condition_columns'])) {
+          foreach (explode(',', $fields[$f]['template_condition_columns']) as $condition_column) {
+            if (!isset($r[$condition_column]) or $r[$condition_column] == '') {
+              $template_condition_ok = false;
+            }
+          }
+        }
+        
+        if ($template_condition_ok) {
+          if ($fields[$f]['eval_template']) {
+            // if the template should be evaluated, eval it
+            $row[] = drupal_eval('<?php ' . $fields[$f]['template'] . '?>');
+          }
+          else {
+            // otherwise, use strtr passing the available columns for simple replacement
+            $row[] = strtr($fields[$f]['template'], $r);
+          }
+        }
+        else {
+          $row[] = '';
+        }
+      }
+          // special case @user_view and @user_edit
+          // this would be possible, in principle, using eval'd template, but it's
+          // so common a need that I don't want to get a huge slow down from eval
+      elseif (($f == '@user_view') and (($r['@uid'] == $user->uid) or ($can_view))) {
+        $row[] = l($fields[$f]['template'], "user/" . $r['@uid']);
+      }
+      elseif (($f == '@user_edit') and (($r['@uid'] == $user->uid) or ($can_edit))) {
+        $row[] = l($fields[$f]['template'], "user/" . $r['@uid'] . "/edit", array(), $destination);
+      }
+      else {
+        $row[] = '';
+      }
+    }
+    
+    $rows[] = $row;
+  }
+  
+  if (variable_get('site_user_list_d_show', 1)) {
+    $form['d_fs'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Display Options'),
+      '#weight' => variable_get('site_user_list_d_weight', -2),
+      '#collapsible' => true,
+      '#collapsed' => true,
+      '#attributes' => array('class' => 'site-user-list-checkboxes-form', 'id' => 'site-user-list-display-options'),
+    );
+    $form['d_fs']['d'] = array(
+      '#type' => 'checkboxes',
+      '#options' => $display_available,
+      '#default_value' => $display,
+    );
+    $form['d_fs'][] = array(
+      '#type' => 'submit',
+      '#value' => t('Update display'),
+    );
+  }
+  
+  if (variable_get('site_user_list_s_show', 1)) {
+    $form['s'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Search Options'),
+      '#weight' => variable_get('site_user_list_s_weight', -1),
+      '#collapsible' => true,
+      '#collapsed' => true,
+      '#tree' => true,
+      '#attributes' => array('id' => 'site-user-list-search-options'),
+    );
+    $form['s']['_initial_text'] = array(
+      '#type' => 'markup',
+      '#value' => t('Display users where:'),
+      '#weight' => -1000,
+      '#prefix' => '<p>',
+      '#suffix' => '</p>',
+    );
+    
+    // get the additional search forms using the hook we've defined
+    // the hook should return an array like:
+    // array('fieldset_name' => form_api_defined_fieldset)
+    $sforms = module_invoke_all('site_user_list_search_form', $_REQUEST['s']);
+    $sforms_total = count($sforms);
+    $sforms_current = 0;
+    foreach ($sforms as $module => $module_form) {
+      $form['s'][$module] = $module_form;
+      $sforms_current++;
+      if ($sforms_current < $sforms_total) {
+        $form['s'][$module]['#suffix'] .= '<p><strong>' . t('and') . '</strong></p>';
+      }
+    }
+
+    $form['s'][] = array(
+      '#type' => 'submit',
+      '#value' => t('Find Users'),
+      '#prefix' => "<p>\n",
+      '#suffix' => "</p>\n",
+    );
+  }
+  
+  if (variable_get('site_user_list_r_show', 1)) {
+    $form['results'] = array(
+      '#type' => 'fieldset',
+      '#weight' => variable_get('site_user_list_r_weight', 0),
+      '#attributes' => array('id' => 'site-user-list-results'),
+    );
+    if (variable_get('site_user_list_s_before', 0) and (count($descriptions))) {
+      $form['results']['s_before'] = array(
+        '#type' => 'markup',
+        '#value' => theme('item_list', $descriptions),
+        '#prefix' => '<div class="site-user-list-results-filter" id="site-user-list-results-filter-before"><p>' . t('Filters:') . '</p>',
+        '#suffix' => '</div>',
+      );
+    }
+    $form['results']['results_table'] = array(
+      '#type' => 'markup',
+      '#value' => theme('table', $display_header, $rows),
+    );
+    if (variable_get('site_user_list_r_count', 1)) {
+      $form['results']['count'] = array(
+        '#type' => 'markup',
+        '#value' => format_plural(count($rows), 'Displaying @count entry', 'Displaying @count entries'),
+        '#prefix' => '<p id="site-user-list-results-count">',
+        '#suffix' => '</p>',
+      );
+    }
+    if (variable_get('site_user_list_s_after', 0) and (count($descriptions))) {
+      $form['results']['s_after'] = array(
+        '#type' => 'markup',
+        '#value' => theme('item_list', $descriptions),
+        '#prefix' => '<div class="site-user-list-results-filter" id="site-user-list-results-filter-after"><p>' . t('Filters:') . '</p>',
+        '#suffix' => '</div>',
+      );
+    }
+    if (variable_get('site_user_list_display_sql_query', 0)) {
+      $form['results']['sql'] = array(
+        '#type' => 'markup',
+        '#value' => check_plain($sql),
+        '#prefix' => '<p id="site-user-list-results-sql">',
+        '#suffix' => '</p>',
+      );
+    }
+  }
+
+  return $form;
+}
+
+/**
+ * the rebuild page
+ * shouldn't really be used much
+ */
+function site_user_list_rebuild_page() {
+  site_user_list_build();
+  drupal_set_message('The database information has been rebuilt');
+  drupal_goto('site_user_list');
+}
+
+/**
+ * this utility function will properly escape a column name (like '@uid')
+ * so that the database doesn't complain.
+ */
+function site_user_list_escape_column($c) {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      return "`$c`";
+      break;
+
+    case 'pgsql':
+      return "\"$c\"";
+      break;
+    
+    default:
+      return $c;
+      break;
+  }
+}
+
+/**
+ * The following hooks would be in user.module if this module were being given
+ * affordances by core
+ */
+
+// information about fields to be displayed
+function user_site_user_list_fields() {
+  return array(
+    // @uid is included so that the user can control it.  It will always
+    // be included in the select statement so we don't need to have a db_column for it
+    '@uid' => array(
+      'display_name' => 'User ID',
+      'description' => 'The user id',
+      'column_header' => 'User ID',
+      'default_template' => '@uid',
+      'eval_template' => false,
+      'search_column' => '@uid',
+      'sort_column' => '@uid',
+    ),
+    '@name' => array(
+      'display_name' => 'User name',
+      'description' => 'The user\'s login name',
+      'db_column' => '@name',
+      'column_header' => 'User name',
+      'default_template' => '@name',
+      'eval_template' => false,
+      'search_column' => '@name',
+      'sort_column' => '@name',
+    ),
+    '@mail' => array(
+      'display_name' => 'Email address',
+      'description' => 'The user\'s email address',
+      'db_column' => '@mail',
+      'column_header' => 'Email address',
+      'default_template' => '<a href="mailto:@mail">@mail</a>',
+      'eval_template' => false,
+      'search_column' => '@mail',
+      'sort_column' => '@mail',
+    ),
+    
+    '@picture' => array(
+      'display_name' => 'User Avatar',
+      'description' => 'The user\'s uploaded picture',
+      'db_column' => '@picture',
+      'column_header' => '',
+      'eval_template' => false,
+      'default_template_condition_columns' => '@picture',
+      'default_template' => '<img src="@_base/@picture" alt="" />',
+    ),
+    
+    // these two columns are place holders, which get special cased all over the place.
+    // By putting them here, the user can control them.
+    '@user_view' => array(
+      'display_name' => 'View User column',
+      'description' => 'Displays a column with a link to user\'s profile. This column is specially handled; the template is the text displayed for the link.',
+      'default_template' => 'view',
+      'eval_template' => false,
+    ),
+    '@user_edit' => array(
+      'display_name' => 'Edit User column',
+      'description' => 'Displays a column with a link to edit the user\'s profile. This column is specially handled; the template is the text displayed for the link.',
+      'default_template' => 'edit',
+      'eval_template' => false,
+    ),
+  );
+}
+
+// add in the fields to the sql query
+function user_site_user_list_query_sql($allowed) {
+  $ret = array();
+  $user_fields = array('name', 'mail', 'picture');
+  foreach ($user_fields as $f) {
+    if ($allowed["@$f"]) {
+      $ret['cols'][] = 'u.' . $f . ' as ' . site_user_list_escape_column("@$f");
+    }
+  }
+  if (!empty($ret)) {
+    return array('user' => $ret);
+  }
+}
+
+/**
+ * The following hooks would be in profile.module if this module
+ * were at all worthy of being in core
+ */
+
+// the settings for which fields to display
+function profile_site_user_list_settings_form() {
+  drupal_add_css(drupal_get_path('module', 'site_user_list') . '/site_user_list.css');
+
+  $form = array();
+  
+  $form['privacy'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Field Privacy Settings'),
+  );
+  $form['privacy']['profile_site_user_list_visible_fields'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Select what profile fields are available for inclusion'),
+    '#description' => t('Profile fields have privacy settings.  By default, you aren\'t allowed to display fields which are supposed to be private.  You can change this here'),
+    '#options' => array(
+      PROFILE_HIDDEN => t('Hidden profile fields'),
+      PROFILE_PRIVATE => t('Private profile fields'),
+      PROFILE_PUBLIC => t('Public profile fields, content shown on profile page but not used on member list pages'),
+      PROFILE_PUBLIC_LISTINGS => t('Public profile field, content shown on profile page and on member list pages'),
+    ),
+    '#default_value' => variable_get('profile_site_user_list_visible_fields', array(PROFILE_PUBLIC, PROFILE_PUBLIC_LISTINGS)),
+  );
+  
+  $form['exclusion'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User exclusion settings'),
+  );
+  
+  $checkbox_fields_q = db_query("SELECT fid, title FROM {profile_fields} WHERE type = 'checkbox'");
+  $checkboxes = array();
+  $checkboxes[0] = '<none>';
+  while($c = db_fetch_array($checkbox_fields_q)) {
+    $checkboxes[$c['fid']] = $c['title'];
+  }
+  
+  $form['exclusion']['profile_site_user_list_exclude_fid'] = array(
+    '#type' => 'select',
+    '#title' => t('Exclude users where the following checkbox'),
+    '#options' => $checkboxes,
+    '#default_value' => variable_get('profile_site_user_list_exclude_fid', 0),
+  );
+  $form['exclusion']['profile_site_user_list_exclude_set'] = array(
+    '#type' => 'select',
+    '#title' => t('Is'),
+    '#options' => array('not_checked' => 'not checked', 'checked' => 'checked'),
+    '#default_value' => variable_get('profile_site_user_list_exclude_set', 'checked'),
+  );
+  
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => 'Save settings',
+  );
+
+  return $form;
+}
+
+function profile_site_user_list_settings_form_submit($form_id, $data) {
+  variable_set('profile_site_user_list_visible_fields', $data['profile_site_user_list_visible_fields']);
+
+  variable_set('profile_site_user_list_exclude_fid', $data['profile_site_user_list_exclude_fid']);
+  variable_set('profile_site_user_list_exclude_set', $data['profile_site_user_list_exclude_set']);
+
+  site_user_list_build();
+
+  drupal_set_message("The settings have been saved");
+}
+
+// return the list of available profile.module fields
+function profile_site_user_list_fields() {
+  $ret = array();
+  
+  $visible_array = array_filter(variable_get('profile_site_user_list_visible_fields', array(PROFILE_PUBLIC, PROFILE_PUBLIC_LISTINGS)));
+  
+  $f_q = db_query("SELECT name, title, explanation FROM {profile_fields} WHERE visibility in (" . implode(',', $visible_array) . ") ORDER BY category, weight, fid");
+  while($f = db_fetch_array($f_q)) {
+    $col = '@' . $f['name'];
+    $ret[$col] = array(
+      'display_name' => 'Profile: ' . $f['title'],
+      'description' => $f['title'] . ($f['explanation'] != '' ? ': ' . $f['explanation'] : ''),
+      'db_column' => $col,
+      'column_header' => $f['title'],
+      'default_template' => $col,
+      'eval_template' => false,
+      'search_column' => $col,
+      'sort_column' => $col,
+    );
+  }
+  
+  return $ret;
+}
+
+// modify the internal SQL statement
+function profile_site_user_list_query_sql($allowed = array()) {
+  $ret = array();
+  $fields_query = db_query("SELECT fid, name from {profile_fields} ORDER BY category, weight, fid");
+  while($field = db_fetch_array($fields_query)) {
+    if ($allowed['@' . $field['name']]) {
+      $fid = $field['fid'];
+      $tbl = 't_' . $fid;
+      $col = $field['name'];
+
+      $ret['cols'][] = "$tbl.value as " . site_user_list_escape_column("@$col");
+      $ret['joins'][] = "LEFT OUTER JOIN {profile_values} as $tbl on (u.uid = $tbl.uid and $tbl.fid = $fid)";
+    }
+  }
+  
+  $exclude_fid = variable_get('profile_site_user_list_exclude_fid', 0);
+  if ($exclude_fid != 0) {
+    $etbl = 't_profile_exclude';
+    $ret['joins'][] = "LEFT OUTER JOIN {profile_values} as $etbl on (u.uid = $etbl.uid and $etbl.fid = $exclude_fid)";
+  
+    $exclude_set = variable_get('profile_site_user_list_exclude_set', 'checked');
+    if ($exclude_set == 'checked') {
+      $ret['where'][] = "(($etbl.value is null) or ($etbl.value != 1))";
+    }
+    elseif ($exclude_set == 'not_checked') {
+      $ret['where'][] = "($etbl.value = 1)";
+    }
+  }
+  
+  if (!empty($ret)) {
+    return array('profile' => $ret);
+  }
+}
+
+// generate a search form
+function profile_site_user_list_search_form($search = array()) {
+  $ret = array();
+  
+  // this function can only provide searching for profile.module fields
+  // plus a few specific user.module fields
+  $profile_fields = array(
+    '@uid',
+    '@name',
+    '@mail',
+  );
+  $profile_fields_query = db_query("SELECT name FROM {profile_fields} ORDER BY category, weight, fid");
+  while($r = db_fetch_array($profile_fields_query)) {
+    $profile_fields[] = '@' . $r['name'];
+  }
+  
+  $fields = array();
+  $fields_query = db_query("SELECT field_identifier, column_header FROM {site_user_list_fields}
+                            WHERE display >= %d AND search_column is not null AND search_column != ''
+                            ORDER BY weight",
+                            SITE_USER_LIST_MAY_DISPLAY);
+  while($r = db_fetch_array($fields_query)) {
+    if (in_array($r['field_identifier'], $profile_fields)) {
+      $fields[$r['field_identifier']] = $r['column_header'];
+    }
+  }
+  
+  $default_which = $search['profile']['which'];
+  $default_what = $search['profile']['what'];
+  if (!isset($default_what)) { $default_what = ''; }
+  
+  $ret['profile'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Contact Information'),
+    '#collapsible' => true,
+    '#collapsed' => ((isset($default_what) and ($default_what != '')) ? false
+                                                                      : true),
+    '#attributes' => array('class' => 'site-user-list-checkboxes-form'),
+    '#tree' => true,
+    '#weight' => -100,
+  );
+  $ret['profile']['which'] = array(
+    '#type' => 'checkboxes',
+    '#options' => $fields,
+    '#prefix' => '<p>' . t('Any of:') . '</p>',
+    '#default_value' => $default_which,
+  );
+  $ret['profile']['what'] = array(
+    '#type' => 'textfield',
+    '#prefix' => '<p>' . t('Contains:') . '</p>',
+    '#default_value' => $default_what,
+  );
+  
+  return $ret;
+}
+
+// provide restrictions
+function profile_site_user_list_restrict($search = array()) {
+  if ($search['profile']) {
+    $which = $search['profile']['which'];
+    $what = $search['profile']['what'];
+    
+    if (count($which) and ($what != '')) {
+      $or_clauses = array();
+      $column_headings = array();
+      foreach ($which as $col) {
+        $res = db_fetch_array(db_query("SELECT search_column, column_header FROM {site_user_list_fields} WHERE field_identifier = '%s'", $col));
+        $or_clauses[] = "(cd." . site_user_list_escape_column($res['search_column']) . " like '%%" . db_escape_string($what) . "%%')";
+        $column_headings[] = '"' . $res['column_header'] . '"';
+      }
+      
+      if (count($or_clauses)) {
+        $or_clause = implode(" or ", $or_clauses);
+        if (count($or_clauses) > 1) {
+          $or_clause = '(' . $or_clause . ')';
+        }
+        
+        $description = "Any of the fields " . implode(" or ", $column_headings) . " contains the text \"" . $what . "\"";
+        
+        
+        return array('profile' => array('where' => array($or_clause), 'description' => array($description)));
+      }
+    }
+  }
+}
+
+?>

@@ -1,0 +1,693 @@
+# #-#-#-#-#  general.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id: image.pot,v 1.5.2.1 2007/05/08 15:11:03 drewish Exp $
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  image.module,v 1.209.2.20 2007/04/09 17:45:22 drewish
+#  image_attach.module,v 1.9.2.9 2007/04/16 22:52:13 drewish
+#  image_import.module,v 1.1.2.4 2007/04/03 16:17:55 drewish
+#  image_gallery.module,v 1.5.2.3 2007/03/30 15:47:04 drewish
+#  image.imagemagick.inc,v 1.3.2.4 2007/04/04 22:02:59 drewish
+#
+# #-#-#-#-#  image_image_attach-module.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id: image.pot,v 1.5.2.1 2007/05/08 15:11:03 drewish Exp $
+#
+# LANGUAGE translation of Drupal (image/contrib/image_attach/image_attach.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  image_attach.module,v 1.9.2.9 2007/04/16 22:52:13 drewish
+#  image_attach.info,v 1.1 2006/11/20 04:54:28 walkah
+#
+# #-#-#-#-#  image_image_gallery-module.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id: image.pot,v 1.5.2.1 2007/05/08 15:11:03 drewish Exp $
+#
+# LANGUAGE translation of Drupal (image/contrib/image_gallery/image_gallery.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  image_gallery.module,v 1.5.2.3 2007/03/30 15:47:04 drewish
+#  image_gallery.info,v 1.2 2006/12/26 17:50:32 walkah
+#
+# #-#-#-#-#  image_image_import-module.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id: image.pot,v 1.5.2.1 2007/05/08 15:11:03 drewish Exp $
+#
+# LANGUAGE translation of Drupal (image/contrib/image_import/image_import.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  image_import.module,v 1.1.2.4 2007/04/03 16:17:55 drewish
+#  image_import.info,v 1.1 2007/02/19 03:40:20 walkah
+#
+# #-#-#-#-#  image-module.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id: image.pot,v 1.5.2.1 2007/05/08 15:11:03 drewish Exp $
+#
+# LANGUAGE translation of Drupal (image/image.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  image.module,v 1.209.2.20 2007/04/09 17:45:22 drewish
+#  image.info,v 1.2 2006/11/20 04:22:27 walkah
+#  image_attach.module,v 1.9.2.9 2007/04/16 22:52:13 drewish
+#  image_attach.info,v 1.1 2006/11/20 04:54:28 walkah
+#  image_gallery.info,v 1.2 2006/12/26 17:50:32 walkah
+#  image_import.info,v 1.1 2007/02/19 03:40:20 walkah
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2007-05-02 23:48+0300\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: image/image.module:283 image/contrib/image_attach/image_attach.module:104
+msgid "Thumbnail"
+msgstr ""
+
+#: image/image.module:295 image/contrib/image_import/image_import.module:143
+msgid "Title"
+msgstr ""
+
+#: image/image.module:320 image/contrib/image_import/image_import.module:143
+msgid "Body"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:146
+#: image/contrib/image_import/image_import.module:143
+msgid "Name"
+msgstr ""
+
+#: image/image.imagemagick.inc:18
+msgid "Path to the \"convert\" binary"
+msgstr ""
+
+#: image/image.imagemagick.inc:31
+msgid "Version"
+msgstr ""
+
+#: image/image.imagemagick.inc:44
+msgid ""
+"No file %file could be found. PHP's <a href='@open-basedir'>open_basedir</a> "
+"security resriction may be interfearing with the attempts to locate it."
+msgstr ""
+
+#: image/image.imagemagick.inc:47
+msgid "The specified ImageMagic path %file does not exist."
+msgstr ""
+
+#: image/image.imagemagick.inc:96
+msgid ""
+"ImageMagick could not be found. The admin will need to set the path on the "
+"<a href='@image-toolkit-settings'>image toolkit page</a>."
+msgstr ""
+
+#: image/image.imagemagick.inc:127
+msgid "ImageMagick reported an error: %error"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:27
+msgid "Image Attachment View"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:32
+msgid "Image attach"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:33
+msgid "Enable image attach for content"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:48
+msgid "Attach existing images"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:51
+msgid ""
+"When enabled, will allow existing image nodes to be attached instead of "
+"uploading new images."
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:66
+msgid "Attach Images"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:68
+msgid "Disabled"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:68
+msgid "Enabled"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:69
+msgid "Should this node allows users to upload an image?"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:73
+msgid "Attached image teaser weight"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:75
+msgid "This value determines the image's weight in the teaser."
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:79
+msgid "Attached image body weight"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:81
+msgid "This value determines the image's weight in the body."
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:96
+msgid "Attached Images"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:111
+msgid "Existing Image"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:114
+msgid ""
+"Choose an image already existing on the server if you do not upload a new "
+"one."
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:118
+msgid "-or-"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:130
+msgid "Upload Image"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:134
+msgid "Image title"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:136
+msgid "The title the image will be shown with."
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:244
+msgid "Image Attach: Display Image"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:247
+msgid "Image with link to attaching node"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:248
+msgid "Image with link to attached image"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:259
+msgid "Image Attach: Attached image"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:260
+msgid "Exists"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:264
+msgid "Filter by whether or not the node has an attached image."
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:0
+msgid "image_attach"
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.info:0
+msgid "Image Attach"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:7
+msgid ""
+"Image galleries can be used to organize and present groups of images. "
+"Galleries may be nested. To add a new gallery click the \"add gallery\" tab."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:20;24;132
+msgid "Image galleries"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:27
+msgid "Create and manage image galleries."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:28
+msgid "List"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:31
+msgid "Add gallery"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:35
+msgid "Image gallery"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:39
+msgid "Configure appearance of image galleries."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:45
+msgid "Edit image gallery"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:58
+msgid "Gallery settings"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:59
+msgid "Images per page"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:59
+msgid "Sets the number of images to be displayed in a gallery page."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:146
+msgid "Operations"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:151
+msgid "edit gallery"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:156
+msgid "No galleries available"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:161;182;212
+msgid "Delete"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:173
+msgid "Gallery name"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:173
+msgid "The name is used to identify the gallery."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:174
+msgid "Description"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:174
+msgid ""
+"The description can be used to provide more information about the image "
+"gallery."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:176
+msgid "Parent"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:177
+msgid "Weight"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:177
+msgid ""
+"When listing galleries, those with with light (small) weights get listed "
+"before containers with heavier (larger) weights. Galleries with equal "
+"weights are sorted alphabetically."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:180
+msgid "Submit"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:194
+msgid "Created new gallery %term."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:197
+msgid "The gallery %term has been updated."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:200
+msgid "The gallery %term has been deleted."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:212
+msgid "Are you sure you want to delete the image gallery %name?"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:212
+msgid ""
+"Deleting an image gallery will delete all sub-galleries. This action cannot "
+"be undone."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:212
+msgid "Cancel"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:217
+msgid "The image gallery %term and all sub-galleries have been deleted."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:242
+msgid "root"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:251
+msgid "Image galleries may be nested below other galleries."
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:278
+msgid "Last updated: %date"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:298
+msgid "Posted by: !name"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:328
+msgid "Image Galleries"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:276;313
+msgid "There is 1 image in this gallery"
+msgid_plural "There are @count images in this gallery"
+msgstr[0] ""
+msgstr[1] ""
+
+#: image/contrib/image_gallery/image_gallery.module:13
+msgid "administer images"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.module:0
+msgid "image_gallery"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.info:0
+msgid "Image Gallery"
+msgstr ""
+
+#: image/contrib/image_gallery/image_gallery.info:0
+msgid "Allows sorting and displaying of image galleries based on categories."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:7
+msgid ""
+"Import multiple image files and save them as image nodes. The files will be "
+"moved from their location into the image module's files directory. "
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:8
+msgid "Searching for image files in %dirpath."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:11
+msgid "Configure the image import module's settings."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:26;35
+msgid "Image import"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:31
+msgid "Import images from the filesystem."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:40
+msgid "Change settings for the Image Import module."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:52
+msgid ""
+"You need to configure the import directory on the image import module's <a "
+"href='!admin-settings-image_import'>settings page</a>."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:127;164
+msgid "Import"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:133
+msgid "No files were found"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:143
+msgid "Size"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:143
+msgid "Dimensions"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:186
+msgid ""
+"%filename as <a href=\"!node-link\">@node-title</a> <a href=\"!edit-link\">"
+"[edit]</a>"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:194
+msgid "Error importing %filename."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:201
+msgid "Successfully imported: "
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:204
+msgid "No image files were imported."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:213
+msgid "Import path"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:216
+msgid ""
+"The directory to import image nodes from. Drupal will need to have write "
+"access to this directory so we can move the file."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:217
+msgid ""
+"<strong>Note:</strong> a path begining with a <kbd>/</kbd> indicates the "
+"path is relative to the server's root, not the website's root. One starting "
+"without a <kbd>/</kbd> specifies a path relative to Drupal's root. For "
+"example: <kbd>/tmp/image</kbd> would be the temp directory off the root "
+"while <kbd>tmp/image</kbd> would be inside Drupal's directory."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:291
+msgid ""
+"You can't import from the image module's directory. The import deletes the "
+"original files so you would just be asking for trouble."
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:18
+msgid "import images"
+msgstr ""
+
+#: image/contrib/image_import/image_import.module:0
+msgid "image_import"
+msgstr ""
+
+#: image/contrib/image_import/image_import.info:0
+msgid "Image Import"
+msgstr ""
+
+#: image/contrib/image_import/image_import.info:0
+msgid "Allows batches of images to be imported from a directory on the server."
+msgstr ""
+
+#: image/image.module:12
+msgid ""
+"The image module is used to create and administer images for your site. Each "
+"image is stored as a post, with thumbnails of the original generated "
+"automatically. There are two default thumbnail sizes, thumbnail and preview. "
+"The thumbnail size is shown as the preview for image posts and when browsing "
+"image galleries. The preview is the default size when first displaying an "
+"image node."
+msgstr ""
+
+#: image/image.module:13
+msgid ""
+"Image administration allows the image directory and the image sizes to be "
+"set.</p><p>\n"
+"Image galleries are used to organize and display images in galleries.   The "
+"list tab allows users to edit existing image gallery names, descriptions, "
+"parents and relative position, known as a weight.  The add galleries tab "
+"allows you to create a new image gallery defining name, description, parent "
+"and weight."
+msgstr ""
+
+#: image/image.module:15
+msgid ""
+"<p>You can</p>\n"
+"<ul>\n"
+"<li>view image handling messages in <a href=\"%admin-settings\">administer "
+"&gt;&gt; settings</a>.</li>\n"
+"<li>configure image sizes and file directories at <a href=\"%admin-settings-"
+"image\">administer &gt;&gt; settings &gt;&gt; image</a>.</li>\n"
+"<li>use the <a href=\"%external-http-drupal-org-project-img_assist\">image "
+"assist module</a> to upload and insert images into posts.</li>\n"
+msgstr ""
+
+#: image/image.module:21
+msgid ""
+"For more information please read the configuration and customization "
+"handbook <a href=\"%image\">Image page</a>."
+msgstr ""
+
+#: image/image.module:32;128;135;319;413 image/image.info:0;0
+#: image/contrib/image_attach/image_attach.module:246
+#: image/contrib/image_attach/image_attach.info:0
+#: image/contrib/image_gallery/image_gallery.info:0
+#: image/contrib/image_import/image_import.info:0
+msgid "Image"
+msgstr ""
+
+#: image/image.module:34
+msgid ""
+"An image (with thumbnail). This is ideal for publishing photographs or "
+"screenshots."
+msgstr ""
+
+#: image/image.module:74
+msgid "File paths"
+msgstr ""
+
+#: image/image.module:75
+msgid "Default image path"
+msgstr ""
+
+#: image/image.module:75
+msgid ""
+"Subdirectory in the directory \"%dir\" where pictures will be stored. Do not "
+"include trailing slash."
+msgstr ""
+
+#: image/image.module:77
+msgid "Maximum upload size"
+msgstr ""
+
+#: image/image.module:77
+msgid "Maximum size of uploads per file, in kilobytes"
+msgstr ""
+
+#: image/image.module:79
+msgid "Image sizes"
+msgstr ""
+
+#: image/image.module:89
+msgid ""
+"Select various pixel dimensions, \"thumbnail\" and \"preview\" are required."
+msgstr ""
+
+#: image/image.module:106
+msgid "Label"
+msgstr ""
+
+#: image/image.module:106
+msgid "Width"
+msgstr ""
+
+#: image/image.module:106
+msgid "Height"
+msgstr ""
+
+#: image/image.module:130;0 image/image.info:0
+#: image/contrib/image_attach/image_attach.info:0
+#: image/contrib/image_gallery/image_gallery.info:0
+#: image/contrib/image_import/image_import.info:0
+msgid "image"
+msgstr ""
+
+#: image/image.module:140
+msgid "Image module settings."
+msgstr ""
+
+#: image/image.module:166
+msgid "Rebuild image thumbnails"
+msgstr ""
+
+#: image/image.module:177
+msgid "Rebuilding %node-title's resized images."
+msgstr ""
+
+#: image/image.module:196
+msgid ""
+"Uploaded file is not a valid image. Only JPG, PNG and GIF files are allowed."
+msgstr ""
+
+#: image/image.module:204
+msgid ""
+"The image you uploaded was too big. You are only allowed upload files less "
+"than %max_size but your file was %file_size."
+msgstr ""
+
+#: image/image.module:242
+msgid "original"
+msgstr ""
+
+#: image/image.module:257;266
+msgid "Latest image"
+msgstr ""
+
+#: image/image.module:258;271
+msgid "Random image"
+msgstr ""
+
+#: image/image.module:319
+msgid "Click \"Browse...\" to select an image to upload."
+msgstr ""
+
+#: image/image.module:411
+msgid "Image: Display Image"
+msgstr ""
+
+#: image/image.module:414
+msgid "Image with link"
+msgstr ""
+
+#: image/image.module:567
+msgid ""
+"No image toolkit is currently enabled. Without one the image module will not "
+"be able to resize your images. You can select one from the <a href=\"!link"
+"\">image toolkit settings page</a>."
+msgstr ""
+
+#: image/image.module:603
+msgid "Unable to create scaled %label image"
+msgstr ""
+
+#: image/image.module:612
+msgid "Unable to create %label image"
+msgstr ""
+
+#: image/image.module:43
+msgid "create images"
+msgstr ""
+
+#: image/image.module:43
+msgid "view original images"
+msgstr ""
+
+#: image/image.module:43
+msgid "edit own images"
+msgstr ""
+
+#: image/image.module:43
+msgid "edit images"
+msgstr ""
+
+#: image/image.info:0
+msgid "Allows uploading, resizing and viewing of images."
+msgstr ""
+
+#: image/contrib/image_attach/image_attach.module:15
+#: image/contrib/image_attach/image_attach.info:0
+msgid "Allows easy attaching of image nodes to other content types."
+msgstr ""

@@ -1,0 +1,36 @@
+<?php
+// $Id: site_user_list_roles.install,v 1.1.2.1 2007/05/22 20:49:00 pukku Exp $
+
+function site_user_list_roles_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query(
+        "CREATE TABLE {site_user_list_roles} (
+          uid int unsigned not null,
+          roles text
+        ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
+      );
+      break;
+    
+    case 'pgsql':
+      db_query(
+        "CREATE TABLE {site_user_list_roles} (
+          uid int_unsigned not null,
+          roles text
+        )"
+      );
+      break;
+  }
+}
+
+function site_user_list_roles_uninstall() {
+  db_query("DROP TABLE {site_user_list_roles}");
+  
+  variable_del('site_user_list_roles_static_use');
+  variable_del('site_user_list_roles_static_type');
+  variable_del('site_user_list_roles_static_roles');
+  variable_del('site_user_list_roles_display');
+}
+
+?>

@@ -1,0 +1,72 @@
+
+html {
+     overflow: -moz-scrollbars-vertical;
+}
+
+
+
+.subform-operation {
+  border: 1px ridge #a2a2a2;
+  padding-left: 10px;
+  padding-right: 10px;
+  text-decoration: none;
+  font-weight: normal;
+}
+.subform-operation:link {
+  text-decoration: none;
+  color: black;
+}
+.subform-operation:hover {
+  text-decoration: none;
+  background-color: #888888;
+  color: white;
+}
+
+
+.subform-fieldset div, .subform-fieldset fieldset, .subform-fieldset fieldset div {
+  margin-left: 20px;
+  padding-left: 0px;
+  border: none;
+}
+
+.subform-fieldset .subform-fieldset {
+  background-color: white;
+}
+
+.subform-fieldset .subform-fieldset .subform-fieldset {
+  background-color: #EEEEEE;
+}
+
+.subform-fieldset {
+  margin-left: 0px;
+  padding-left: 0px;
+  border: none;
+  background-color: #EEEEEE;
+  padding-bottom: 0px;
+  margin-bottom: 0px;
+}
+
+.subform-fieldset fieldset {
+  padding-bottom: 0px;
+  margin-bottom: 0px;
+}
+
+.subform-fieldset .subform-fieldset {
+  background: white;
+  margin-bottom: 8px;
+}
+
+.subform-fieldset fieldset div div {
+  margin-left: 0px;
+}
+
+.subform-fieldset legend {
+  margin-left: -10px;
+  padding-left: 0px;
+}
+
+.subform-fieldset .form-text, .subform-fieldset .form-select {
+  width: 100%;
+}
+
+

@@ -1,0 +1,14 @@
+<?php
+// $Id: sweeper.install,v 1.8 2006/11/28 14:37:44 dries Exp $
+
+/**
+ * Implementation of hook_install().
+ */
+function sweeper_install() {
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function sweeper_uninstall() {
+}

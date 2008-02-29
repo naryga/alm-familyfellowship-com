@@ -1,0 +1,225 @@
+<?php
+// $Id: site_user_list_roles.module,v 1.1.2.1 2007/05/22 20:49:00 pukku Exp $
+
+/**
+ * provide the user interface
+ */
+
+function site_user_list_roles_menu($may_cache) {
+  $items = array();
+
+  if ($may_cache) {
+    $items[] = array(
+      'path' => 'admin/settings/site_user_list/roles',
+      'title' => t('Roles'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('site_user_list_roles_roles_form'),
+      'access' => user_access('administer site configuration'),
+      'type' => MENU_LOCAL_TASK,
+    );
+  }
+  else {
+  }
+  
+  return $items;
+}
+
+function site_user_list_roles_roles_form() {
+  $form = array();
+  
+  $form['static'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Include / Exclude'),
+  );
+  $form['static']['site_user_list_roles_static_use'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Restrict the users in the list using user roles'),
+    '#default_value' => variable_get('site_user_list_roles_static_use', 0),
+  );
+  $form['static']['site_user_list_roles_static_type'] = array(
+    '#type' => 'select',
+    '#options' => array(
+      'exclude' => 'exclude users with roles',
+      'include' => 'only include users with roles',
+    ),
+    '#default_value' => variable_get('site_user_list_roles_static_type', 'exclude'),
+  );
+  $users_roles = user_roles(true);
+  unset($users_roles[DRUPAL_AUTHENTICATED_RID]); // all users are authenticated!
+  $form['static']['site_user_list_roles_static_roles'] = array(
+    '#type' => 'checkboxes',
+    '#options' => $users_roles,
+    '#default_value' => variable_get('site_user_list_roles_static_roles', array()),
+    '#description' => 'The authenticated user role is not listed because all users have this role.  Note that unless you have some some roles selected here, nothing will happen, even if you have the checkbox to restrict using user roles checked.',
+  );
+  
+  $form['display_fs'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Roles to display in role column'),
+  );
+  $form['display_fs']['site_user_list_roles_display'] = array(
+    '#type' =>  'checkboxes',
+    '#options' => user_roles(true), // we want the authenticated role listed here!
+    '#default_value' => array_keys(variable_get('site_user_list_roles_display', user_roles(true))),
+  );
+  
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => 'Save settings',
+  );
+  
+  return $form;
+}
+
+function site_user_list_roles_roles_form_submit($form_id, $data) {
+  variable_set('site_user_list_roles_static_use', $data['site_user_list_roles_static_use']);
+  variable_set('site_user_list_roles_static_type', $data['site_user_list_roles_static_type']);
+  variable_set('site_user_list_roles_static_roles', array_keys(array_filter($data['site_user_list_roles_static_roles'])));
+
+  variable_set('site_user_list_roles_display', 
+               _site_user_list_roles_user_transform_roles(array_filter($data['site_user_list_roles_display'])));
+  
+  drupal_set_message('The settings have been saved.');
+  
+  site_user_list_roles_rebuild_table();
+  
+  site_user_list_build();
+}
+
+/**
+ * implement the site_user_list api hooks
+ */
+
+function site_user_list_roles_site_user_list_query_sql($allowed) {
+  $ret = array();
+
+  if (variable_get('site_user_list_roles_static_use', 0)) {
+    $inc_exc = variable_get('site_user_list_roles_static_type', 'exclude');
+    $roles = variable_get('site_user_list_roles_static_roles', array());
+    
+    if (!empty($roles)) {
+      $op = '';
+      if ($inc_exc == 'exclude') {
+        $op = 'not in';
+      }
+      elseif ($inc_exc == 'include') {
+        $op = 'in';
+      }
+      
+      $ret['where'][] = '(u.uid'
+              . ' ' . $op . ' '
+              . '(select distinct sul_ur.uid from {users_roles} as sul_ur'
+              . ' where sul_ur.rid in (' . implode(',', $roles) . ')))'
+              ;
+    }
+  }
+  
+  if ($allowed['@sul_roles']) {
+    $ret['cols'][] = "sul_roles.roles as " . site_user_list_escape_column("@sul_roles");
+    $ret['joins'][] = "LEFT OUTER JOIN {site_user_list_roles} as sul_roles on (u.uid = sul_roles.uid)";
+  }
+  
+  if (!empty($ret)) {
+    return array('site_user_list_roles' => $ret);
+  }
+}
+
+function site_user_list_roles_site_user_list_search_form($search = array()) {
+}
+
+function site_user_list_roles_site_user_list_restrict($search = array()) {
+}
+
+function site_user_list_roles_site_user_list_fields() {
+  return array(
+    '@sul_roles' => array(
+      'display_name' => 'User\'s roles',
+      'description' => 'The user\'s roles, as an unordered list',
+      'column_header' => 'Roles',
+      'db_column' => '@sul_roles',
+      'default_template' => '@sul_roles',
+      'eval_template' => false,
+      'search_column' => '', //not searchable or sortable in this way
+      'sort_column' => '',
+    ),
+  );
+}
+
+/**
+ * implement hook_user()
+ */
+
+function site_user_list_roles_user($op, &$edit, &$account, $category = NULL) {
+  switch ($op) {
+    case 'insert':
+      site_user_list_roles_set_display($edit["uid"], _site_user_list_roles_user_transform_roles($edit["roles"]));
+      break;
+    
+    case 'update':
+      site_user_list_roles_set_display($account->uid, _site_user_list_roles_user_transform_roles($edit["roles"]));
+      break;
+      
+    case 'delete':
+      db_query("DELETE FROM {site_user_list_roles} WHERE uid = %d", $account->uid);
+      break;
+  }
+}
+
+function _site_user_list_roles_user_transform_roles($roles = array()) {
+  $ret = array();
+  if (!empty($roles)) {
+    $q = db_query("SELECT rid, name FROM {role} WHERE rid in (" . implode(',', array_keys($roles)) . ")");
+    while($r = db_fetch_array($q)) {
+      $ret[$r['rid']] = $r['name'];
+    }
+    asort($ret, SORT_LOCALE_STRING);
+  }
+  return $ret;
+}
+
+function site_user_list_roles_set_display($uid, $roles = array()) {
+  // all users have authenticated role.  We'll unset this here, and add it back in
+  // if so desired
+  unset($roles[DRUPAL_AUTHENTICATED_RID]);
+  
+  // make a list of those roles we want to display
+  $display_roles = variable_get('site_user_list_roles_display', user_roles(true));
+  
+  $roles_final = array();
+  foreach (array_merge(array('authenticated user'), $roles) as $r) {
+    if (in_array($r, $display_roles)) {
+      $roles_final[] = $r;
+    }
+  }
+  
+  db_query("DELETE FROM {site_user_list_roles} WHERE uid = %d", $uid);
+  if (!empty($roles_final)) {
+    db_query("INSERT INTO {site_user_list_roles} (uid, roles) VALUES (%d, '%s')", $uid, theme('item_list', $roles_final));
+  }
+}
+
+function site_user_list_roles_rebuild_table() {
+  $q = db_query("SELECT u.uid, r.name FROM {users} as u LEFT OUTER JOIN {users_roles} as ur on (u.uid = ur.uid) LEFT OUTER JOIN {role} as r on (ur.rid = r.rid) WHERE (u.uid != 0)");
+  $all = array();
+  while($r = db_fetch_array($q)) {
+    $all[$r['uid']][] = $r['name'];
+  }
+  foreach ($all as $uid => $roles) {
+    $roles_sorted = $roles;
+    sort($roles_sorted, SORT_LOCALE_STRING);
+    site_user_list_roles_set_display($uid, $roles_sorted);
+  }
+}
+
+/**
+ * on enabling, we need to rebuild the entire table
+ */
+function site_user_list_roles_enable() {
+  site_user_list_roles_rebuild_table();
+}
+
+function site_user_list_roles_disable() {
+  drupal_set_message('Make sure you go to the site user list settings and set the roles column to never displayed.');
+}
+
+?>

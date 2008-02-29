@@ -1,0 +1,21 @@
+@CHARSET "UTF-8";
+
+/**
+*   Zen Fixed
+*
+*   Provides CSS to make a fixed width version of the theme.
+*   $Id: style.css,v 1.7.2.1 2007/01/28 19:28:05 jjeff Exp $
+*
+*/
+
+/**
+ * Drupal always loads this CSS (the selected theme's style.css) first.
+ * However, we want to load Zen's main CSS and then override a few of its
+ * declarations (body width and #page width), so we can't do that from within
+ * this file. So we will load Zen's CSS files in using the template.php file
+ * in this directory and then add the overrides.css (again in this directory)
+ * last. If this were a full-fledged theme, this file could have complete CSS,
+ * but since we just want to override Zen's style.css, this file is essentially
+ * a dummy stub.
+ */ 
+

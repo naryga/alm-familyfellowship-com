@@ -1,0 +1,113 @@
+<?php
+// $Id: faq.install,v 1.1.4.15 2007/07/04 12:39:42 snpower Exp $
+
+/**
+ * Implementation of hook_install()
+ * just give a message
+ */
+function faq_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $created = db_query("CREATE TABLE IF NOT EXISTS {faq_weights} (
+        tid INT(10) UNSIGNED NOT NULL DEFAULT '0',
+        nid INT(10) NOT NULL DEFAULT '0',
+        weight TINYINT(4) NOT NULL DEFAULT '0',
+        PRIMARY KEY (tid, nid)
+      ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+      break;
+
+    case 'pgsql':
+      $created = db_query('CREATE TABLE {faq_weights} (
+        tid integer NOT NULL DEFAULT 0,
+        nid integer NOT NULL DEFAULT 0,
+        weight smallint NOT NULL DEFAULT 0,
+        PRIMARY KEY (tid, nid)
+      );');
+      break;
+  }
+
+  if ($created) {
+    drupal_set_message(t('FAQ module installed successfully.'));
+  }
+  else {
+    drupal_set_message(t('Table installation for the FAQ module was unsuccessful.'), 'error');
+  }
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function faq_uninstall() {
+  // delete the variables we created.
+  variable_del('faq_display');
+  variable_del('faq_back_to_top');
+  variable_del('faq_use_categories');
+  variable_del('faq_category_display');
+  variable_del('faq_block_recent_faq_count');
+  variable_del('faq_use_teaser');
+  variable_del('faq_more_link');
+  variable_del('faq_description');
+  variable_del('faq_description_format');
+  variable_del('faq_group_questions_top');
+  variable_del('faq_answer_category_name');
+  variable_del('faq_question_listing');
+  variable_del('faq_category_listing');
+  variable_del('faq_count');
+
+  // Remove all FAQ nodes.
+  $result = db_query("SELECT nid FROM {node} WHERE type = 'faq'");
+  while ($obj = db_fetch_object($result)) {
+    node_delete($obj->nid);
+  }
+
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $deleted = db_query("DROP TABLE IF EXISTS {faq_weights}");
+      break;
+
+    case 'pgsql':
+      $deleted = db_query('DROP TABLE {faq_weights}');
+      break;
+  }
+
+  // Remove the node type
+  node_type_delete('FAQ');
+
+  // clear the cache tables
+  cache_clear_all('*', 'cache', TRUE);
+  cache_clear_all('*', 'cache_filter', TRUE);
+  cache_clear_all('*', 'cache_menu', TRUE);
+  cache_clear_all('*', 'cache_page', TRUE);
+
+  watchdog('FAQ', 'faq module removed');
+}
+
+function faq_update_1() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("CREATE TABLE IF NOT EXISTS {faq_weights} (
+        tid INT(10) UNSIGNED NOT NULL DEFAULT '0',
+        nid INT(10) NOT NULL DEFAULT '0',
+        weight TINYINT(4) NOT NULL DEFAULT '0',
+        PRIMARY KEY (tid, nid)
+      ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+      break;
+
+    case 'pgsql':
+      $ret[] = update_sql('CREATE TABLE {faq_weights} (
+        tid integer NOT NULL DEFAULT 0,
+        nid integer NOT NULL DEFAULT 0,
+        weight smallint NOT NULL DEFAULT 0,
+        PRIMARY KEY (tid, nid)
+      );');
+      break;
+  }
+
+  return $ret;
+}
+
+

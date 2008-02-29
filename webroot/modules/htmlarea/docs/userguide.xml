@@ -1,0 +1,131 @@
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V3.1//EN">
+<book>
+  <bookinfo>
+    <title>Drupal HTMLArea User Guide</title>
+    <author>
+      <firstname>Gordon</firstname>
+      <surname>Heydon</surname>
+      <affiliation>
+        <jobtitle>Senior Consultant</jobtitle>
+        <orgname>Heydon Consulting</orgname>
+        <address>
+          <email>gordon@heydon.com.au</email>
+        </address>
+      </affiliation>
+    </author>
+    <revhistory>
+      <revision>
+        <revnumber>0.1</revnumber>
+        <date>26 Jul 2004</date>
+        <authorinitials>gjh</authorinitials>
+        <revremark>Inital Version</revremark>
+      </revision>
+      <revision>
+        <revnumber>1</revnumber>
+        <date>16 Oct 2004</date>
+        <authorinitials>gjh</authorinitials>
+        <revremark>Cut down and turn into more main stream documentation for
+          user with Drupal.
+        </revremark>
+      </revision>
+    </revhistory>
+  </bookinfo>
+  <chapter>
+    <title>Introduction</title>
+    <screenshot><graphic fileref="images/htmlarea.png" 
+        align="center">HTMLArea</graphic></screenshot>
+  </chapter>
+  <chapter>
+    <title>Using HTMLArea</title>
+    <sect1>
+      <title>Insert Images</title>
+      <para>From the main editor screen click on the <inlinegraphic
+          fileref="images/ed_image.png">insert image</inlinegraphic> icon and the
+        windows will popup allowing you to choose and image.</para>
+      <graphicco>
+        <areaspec units="calspair">
+          <area id="taxonomy" coords="5,317 136,58">
+          <area id="imageproperties" coords="140,317 419,282">
+          <area id="upload" coords="140,280 419 168">
+          <area id="imagepreview" coords="140,162 363,8">
+        </areaspec>
+        <graphic fileref="images/htmlarea_Insert_image.png" align="left" scalefit="1" width="180mm">HTMLArea</graphic>
+      </graphicco>
+      <calloutlist>
+        <callout arearefs="taxonomy">
+          <para><emphasis>Categories Selection</emphasis></para>
+          <para>Use this the pull down classes menu to choose the category
+            that you wish to select an image from. Once you have selected
+            the required option you will then be presented a with a list of
+            images from this category. By selecting the required image the
+            image properties will be populated ready to insert the image.</para>
+        </callout>
+        <callout arearefs="imageproperties">
+          <para><emphasis>Image Properties</emphasis></para>
+          <para>these fields are used to set how the image is going to be
+            layed out on the page. Setting these will change how the &lt;img&gt; 
+            tag is going to be build which will impact on the display of the
+          image.</para>
+        </callout>
+        <callout arearefs="upload">
+          <para><emphasis>Image Upload</emphasis></para>
+          <para>If the selected image is not included in the current image
+            gallery you are able to upload an image. This image that is
+            uploaded will be attached to the currect category. Populate the
+            description and the name of the file that you wish to upload.
+            Click the upload button and the file will be uploaded and
+            inserted into the image gallery.</para>
+          <note><para>If no description is entered, then the name of the file will
+              be used as the description.</para></note>
+        </callout>
+        <callout arearefs="imagepreview">
+          <para><emphasis>Image Preview</emphasis></para>
+          <para>This area is populated when an image is selected from the
+            image list or the preview button is selected.</para>
+        </callout>
+      </calloutlist>
+    </sect1>
+    <sect1>
+      <title>Link Documents</title>
+      <para>From the main editor screen click on the <inlinegraphic
+          fileref="images/ed_link.png">anchor</inlinegraphic> icon and the
+        windows will popup allowing you to choose and image.</para>
+      <graphicco>
+        <areaspec units="calspair">
+          <area id="linkproperties" coords="5,309 240,262">
+          <area id="documentcategories" coords="5,259 240,90">
+          <area id="documentupload" coords="5,86 240,24">
+        </areaspec>
+        <graphic fileref="images/htmlarea_Insert_link.png" align="left" scalefit="1" scale="60" width="180mm">HTMLArea</graphic>
+      </graphicco>
+      <calloutlist>
+        <callout arearefs="linkproperties">
+          <para><emphasis>Link Properties</emphasis></para>
+          <para>these fields are used to set how the image is going to be
+            layed out on the page. Setting these will change how the &lt;a&gt; 
+            tag is going to be build which will impact on the display of the
+          image.</para>
+        </callout>
+        <callout arearefs="documentcategories">
+          <para><emphasis>Categories Selection</emphasis></para>
+          <para>Use this the pull down classes menu to choose the category
+            that you wish to select an image from. Once you have selected
+            the required option you will then be presented a with a list of
+            images from this category. By selecting the required image the
+            image properties will be populated ready to insert the image.</para>
+        </callout>
+        <callout arearefs="documentupload">
+          <para><emphasis>Document Upload</emphasis></para>
+          <para>If the selected document is not included in the current
+            category you are able to upload a document. This document that is
+            uploaded will be attached to the currect category. Populate the
+            description and the name of the file that you wish to upload.
+            Click the upload button and the file will be uploaded and
+            inserted into the document list.</para>
+          <note><para>If no description is entered, then the name of the file will
+              be used as the description.</para></note>
+        </callout>
+      </calloutlist>
+    </sect1>
+  </chapter>
+</book>

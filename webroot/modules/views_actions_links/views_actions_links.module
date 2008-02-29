@@ -1,0 +1,126 @@
+<?php
+// $Id: views_actions_links.module,v 1.1.2.1 2007/07/13 06:29:19 morrissinger Exp $
+
+/**
+ * @file
+ *	Integrates the Actions module into Views by providing a field for
+ * each action.
+ */
+
+/*********************************************************************
+ * Hooks: Drupal
+ */
+
+/**
+ * Implementation of hook_perm().
+ */
+function views_actions_links_perm() {
+	$permissions = array();
+	$actions = actions_get_all_actions();
+	
+	foreach($actions as $aid => $action) {
+		$permissions[] = 'execute ' . $action['description'] . ' from views';
+	}
+	
+	return $permissions;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function views_actions_links_menu($may_cache) {
+	$items = array();
+	if(!$may_cache) {
+		if(arg(0) == 'views_actions_links' && arg(1) == 'action') {
+      $actions = actions_get_all_actions();
+      $action = $actions[arg(2)]['description'];
+      $access = user_access(_views_actions_links_get_perm($action));
+		} else {
+			$access = FALSE;
+		}
+		
+		$items[] = array(
+			'path' => 'views_actions_links/action',
+			'type' => MENU_CALLBACK,
+			'access' => $access,
+			'callback' => 'views_actions_links_do'
+		);
+	}
+	return $items;
+}
+
+/*********************************************************************
+ * Hooks: Views
+ */
+
+/**
+ * Implementation of hook_views_tables().
+ */
+function views_actions_links_views_tables() {
+	$actions = actions_get_all_actions();
+	
+	$action_fields = array();
+	foreach($actions as $aid => $action) {
+		$action_fields['views_actions_links_' . $aid] = array(
+			'name' => t('!type: !name (action)', array('!type' => $action['type'], '!name' => $action['description'])),
+			'help' => t('Provide a link to trigger the !name action.', array('!name' => $action['description'])),
+			'notafield' => TRUE,
+			'handler' => 'views_actions_links_provide_link',
+			'action' => $action,
+		);
+	}
+	
+	$tables['views_actions_links'] = array(
+		'name' => 'views_actions_links',
+		'join' => array(
+			'left' => array(
+				'table' => 'node',
+				'field' => 'nid',
+			),
+			'right' => array(
+				'field' => 'nid',
+			),
+		),
+		'fields' => $action_fields,
+	);
+	
+	return $tables;
+}
+
+/**
+ * Views field handler to provide the link to a menu callback that will
+ * trigger the action.
+ */
+function views_actions_links_provide_link($fieldinfo, $fielddata, $value, $data) {
+	$nid = $data->nid;
+	$action = $fieldinfo['action'];
+
+	if(user_access(_views_actions_links_get_perm($action))) {
+		return l($action['description'], 'views_actions_links/action/' . $action['function'] . '/' . $nid, array(), drupal_get_destination());
+	}
+}
+
+/*********************************************************************
+ * Menu Callbacks
+ */
+
+/**
+ * The actual menu callback that triggers the action for a given nid.
+ */
+function views_actions_links_do($action, $nid) {
+	$result = actions_do($action, node_load($nid));
+	drupal_set_message(t('Action performed.'));
+	drupal_goto(substr(drupal_get_destination(), 12));
+}
+
+/*********************************************************************
+ * Helper functions
+ */
+
+function _views_actions_links_get_perm($action) {
+	if(is_array($action)) {
+		return 'execute ' . $action['description'] . ' from views';
+	} else {
+		return 'execute ' . $action . ' from views';
+	}
+}

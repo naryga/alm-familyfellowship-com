@@ -1,0 +1,32 @@
+$Id: CHANGELOG.txt,v 1.23.2.2 2007/03/09 02:22:10 zoo33 Exp $
+
+Img_assist module
+
+For a complete list of changes to this module, please see:
+http://drupal.org/project/cvs/8750
+
+February-March, 2007
+--------------------
+  * Updated module to Drupal 5
+  * Fixed various bugs, mostly related to the Drupal 5 update
+  * Cleaned up the implementation of the image upload form
+  * Fixed a problem with original images not being recognized
+  * Tweaked the CSS
+  * Releasing Image assist 5.x-1.0
+
+May 4, 2005
+------------
+  * Made changes to image_display() (http://drupal.org/node/60126)
+  * Fixed default size bug (img_assist_default_label variable)
+  * Moved br clear to a themeable function ()
+  * Fixed clean URLs popup bug (http://drupal.org/node/55832)
+  * Fixed "No images were found" bug (http://drupal.org/node/59123)
+
+March 23, 2005
+--------------
+  * Removed tinymce.module from distribution.
+  * Addded install file and removed img_assist.mysql and img_assist.pgsql
+
+March 15, 2005
+--------------
+  * Completely rewritten by BenShell for Drupal 4.7

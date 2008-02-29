@@ -1,0 +1,12 @@
+; $Id: site_user_list.info,v 1.1.2.3 2007/04/23 15:53:10 pukku Exp $
+
+name = Site User List
+description = Provides a searchable and sortable tabular view of user profiles
+dependencies = profile
+
+
+; Information added by drupal.org packaging script on 2007-07-13
+version = "5.x-1.x-dev"
+project = "site_user_list"
+datestamp = "1184328628"
+
